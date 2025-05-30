@@ -317,13 +317,15 @@ def export_to_excel(data, github_mode=False):
             "name": "市政公用工程信用分排序",
             "prefix": "建筑业企业资质_施工总承包_市政公用工程_",
             "freeze": 'B2',
-            "merge": False
+            "merge": False,
+            "generate_json": True  # 新增JSON生成标记
         },
         {
             "name": "装修装饰工程信用分排序",
             "prefix": "建筑业企业资质_专业承包_建筑装修装饰工程_",
             "freeze": 'B2',
-            "merge": False
+            "merge": False,
+            "generate_json": True  # 新增JSON生成标记
         }
     ]
 
