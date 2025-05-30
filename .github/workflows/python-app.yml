@@ -39,8 +39,8 @@ jobs:
 
         # 清理历史输出文件
         mkdir -p excel_output
-        find excel_output/ -maxdepth 1 -type f \( -name "*.xlsx" -o -name "*.json" \) -delete
-
+        # find excel_output/ -maxdepth 1 -type f \( -name "*.xlsx" -o -name "*.json" \) -delete
+        find excel_output/ -maxdepth 1 -type f -name "*.xlsx" -delete
         # 执行主脚本
         python3 main.py
 
