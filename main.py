@@ -165,7 +165,7 @@ def append_top_json(sorted_data, category_name, github_mode=False):
         os.makedirs(output_dir, exist_ok=True)
     
     # 构建固定日期的文件名
-    json_filename = f"{category_name}_top10_{date_str}.json"
+    json_filename = f"{category_name}_top10.json"
     json_path = os.path.join(output_dir, json_filename)
     
     # 准备本次数据
