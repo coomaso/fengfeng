@@ -326,6 +326,20 @@ def export_to_excel(data, github_mode=False):
             "freeze": 'B2',
             "merge": False,
             "generate_json": True  # 新增JSON生成标记
+        },
+        {
+            "name": "水利水电工程信用分排序",
+            "prefix": "建筑业企业资质_施工总承包_水利水电工程_",
+            "freeze": 'B2',
+            "merge": False,
+            "generate_json": True  # 新增JSON生成标记
+        },
+        {
+            "name": "电力工程信用分排序",
+            "prefix": "建筑业企业资质_施工总承包_电力工程_",
+            "freeze": 'B2',
+            "merge": False,
+            "generate_json": True  # 新增JSON生成标记
         }
     ]
 
