@@ -174,7 +174,8 @@ def append_top_json(sorted_data, category_name, github_mode=False):
         data_list.append({
             "排名": idx,
             "企业名称": item.get("cioName", ""),
-            "诚信分值": item.get("score", 0)
+            "诚信分值": item.get("score", 0),
+            "组织ID": item.get("cecId", ""),
         })
     
     # 构建本次更新数据
