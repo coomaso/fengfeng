@@ -150,6 +150,48 @@ def process_page(session: requests.Session, page: int, code: str, timestamp: str
 
     raise RuntimeError("超过最大重试次数")
 
+def fetch_company_detail(session: requests.Session, cec_id: str, company_name: str) -> dict:
+    """获取企业信誉分明细"""
+    print(f"\n获取企业信誉分明细: {company_name} (cecId={cec_id})")
+    detail_url = f"http://106.15.60.27:22222/ycdc/bakCmisYcOrgan/getCurrentIntegrityDetails?cecId={cec_id}"
+    
+    try:
+        # 发送请求
+        response = safe_request(session, detail_url)
+        response_data = response.json()
+        
+        # 检查响应状态
+        if response_data.get("code") != 0:
+            print(f"信誉分明细接口异常: {response_data}")
+            return {}
+        
+        # 解密数据
+        encrypted_data = response_data.get("data", "")
+        if not encrypted_data:
+            print("信誉分明细接口返回空数据")
+            return {}
+            
+        decrypted_str = aes_decrypt_base64(encrypted_data)
+        detail_data = json.loads(decrypted_str)
+        
+        # 提取需要的数据结构
+        company_detail = {
+            "cioName": detail_data.get("data", {}).get("cioName", company_name),
+            "jfsj": detail_data.get("data", {}).get("jfsj", ""),
+            "eqtName": detail_data.get("data", {}).get("eqtName", ""),
+            "blxwArray": detail_data.get("data", {}).get("blxwArray", []),
+            "cxdamxArray": detail_data.get("data", {}).get("cxdamxArray", []),
+            "cecId": detail_data.get("data", {}).get("cecId", cec_id),
+            "cechId": detail_data.get("data", {}).get("cechId", "")
+        }
+        
+        print(f"成功获取企业信誉分明细: {company_detail.get('cioName')}")
+        return company_detail
+        
+    except Exception as e:
+        print(f"获取企业信誉分明细失败: {str(e)}")
+        return {}
+
 def append_top_json(sorted_data, category_name, github_mode=False):
     """追加数据到当天的JSON文件"""
     # 获取当前日期（北京时间）
@@ -171,12 +213,19 @@ def append_top_json(sorted_data, category_name, github_mode=False):
     # 准备本次数据
     data_list = []
     for idx, item in enumerate(sorted_data[:10], 1):
-        data_list.append({
+        # 添加企业基本信息
+        company_data = {
             "排名": idx,
             "企业名称": item.get("cioName", ""),
             "诚信分值": item.get("score", 0),
             "组织ID": item.get("cecId", ""),
-        })
+        }
+        
+        # 添加信誉分明细
+        if "detail" in item:
+            company_data["信誉分明细"] = item["detail"]
+        
+        data_list.append(company_data)
     
     # 构建本次更新数据
     update_data = {
@@ -212,10 +261,11 @@ def append_top_json(sorted_data, category_name, github_mode=False):
         print(f"JSON文件追加失败: {str(e)}")
         return None
 
-def export_to_excel(data, github_mode=False):
+def export_to_excel(data, session, github_mode=False):
     """
     专业级Excel导出函数（多工作表分类排序）
     :param data: 待导出数据列表，每个元素为字典格式
+    :param session: 请求会话
     :param github_mode: 是否启用GitHub Actions模式
     :return: 生成的Excel文件绝对路径
     """
@@ -351,6 +401,7 @@ def export_to_excel(data, github_mode=False):
         os.makedirs(output_dir, exist_ok=True)
 
     json_files = []
+    detail_cache = {}  # 企业明细缓存
 
     # ==================== 构建各工作表 ====================
     # 先创建汇总表
@@ -402,6 +453,29 @@ def export_to_excel(data, github_mode=False):
                 reverse=True
             )
             print(f"过滤到数据量: {len(sheet_data)}")  # 调试日志
+            
+            # ===== 新增：为所有前10名企业获取信誉分明细 =====
+            # 遍历前10名企业
+            for item in sheet_data[:10]:
+                cec_id = item.get('cecId')
+                company_name = item.get('cioName')
+                
+                if not cec_id:
+                    print(f"警告: 企业 {company_name} 缺少cecId，跳过")
+                    continue
+                    
+                # 检查缓存
+                if cec_id in detail_cache:
+                    item['detail'] = detail_cache[cec_id]
+                    print(f"使用缓存获取企业信誉分明细: {company_name}")
+                else:
+                    # 获取企业信誉分明细
+                    detail = fetch_company_detail(session, cec_id, company_name)
+                    if detail:
+                        item['detail'] = detail
+                        detail_cache[cec_id] = detail
+                    else:
+                        print(f"警告: 未获取到企业 {company_name} 的信誉分明细")
 
             # 生成JSON（仅限指定工作表）
             if config.get("generate_json"):
@@ -577,7 +651,7 @@ def main():
 
         # 导出数据前再次检查
         if all_data:
-            export_result = export_to_excel(all_data, github_mode=True)
+            export_result = export_to_excel(all_data, session, github_mode=True)
             if export_result:
                 json_files = export_result.get("json", [])
                 
