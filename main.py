@@ -180,7 +180,7 @@ def fetch_company_detail(session: requests.Session, cec_id: str, company_name: s
             "jfsj": detail_data.get("data", {}).get("jfsj", ""),
             "eqtName": detail_data.get("data", {}).get("eqtName", ""),
             "blxwArray": detail_data.get("data", {}).get("blxwArray", []),
-            "cxdamxArray": detail_data.get("data", {}).get("cxdamxArray", []),
+            "lhxwArray": detail_data.get("data", {}).get("lhxwArray", []),
             "cecId": detail_data.get("data", {}).get("cecId", cec_id),
             "cechId": detail_data.get("data", {}).get("cechId", "")
         }
