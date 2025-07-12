@@ -293,12 +293,16 @@
       border-bottom: 1px solid #edf2f7;
     }
     
-    .panel-title {
+    .panel-title, .credit-section-title {
       font-size: 1.2rem;
       font-weight: 700;
       color: #1e293b;
     }
-    
+    @media (max-width: 768px) {
+      .panel-title, .credit-section-title {
+        font-size: 1.1rem;
+      }
+    }
     .refresh-btn {
       background: #dbeafe;
       color: #1d4ed8;
@@ -844,9 +848,11 @@
       }
       
       h1 {
-        font-size: 1.5rem;
-        gap: 10px;
+        white-space: nowrap;
+        overflow-x: auto;
+        text-overflow: ellipsis;
       }
+    }
       
       .subtitle {
         font-size: 0.85rem;
@@ -930,12 +936,17 @@
     
     @media (max-width: 600px) {
       .filter-row {
-        flex-direction: column;
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
       }
-      
-      .search-container {
-        max-width: 100%;
+      .search-container,
+      .date-range,
+      .expand-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 33%;
       }
     }
     
@@ -1273,9 +1284,19 @@
     /* 在移动端调整图表高度 */
     @media (max-width: 768px) {
       .chart-container {
-        height: 400px;
+        height: 70vh;
+        min-height: 420px;
+        max-height: 900px;
       }
     }
+    @media (max-width: 480px) {
+      .chart-container {
+        height: 75vh;
+        min-height: 380px;
+        max-height: 900px;
+      }
+    }
+
   </style>
 </head>
 <body>
