@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>宜昌市企业信用与中标信息平台</title>
+    <!-- 预加载 echarts 脚本，as="script" 声明资源类型 -->
+  <link rel="preload" href="https://cdn.bootcdn.net/ajax/libs/echarts/5.6.0/echarts.min.js" as="script">
+  <link rel="preload" href="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.9.1/chart.min.js" as="script">
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%);
+      color: #333;
+      line-height: 1.6;
+      padding: 15px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+    
+    header {
+      background: linear-gradient(90deg, #1a56db 0%, #0e4cb8 100%);
+      color: white;
+      padding: 22px 25px;
+      border-radius: 18px 18px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header-overlay {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      opacity: 0.08;
+    }
+    
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      justify-content: center;
+    }
+    
+    .subtitle {
+      font-size: 0.95rem;
+      opacity: 0.92;
+      font-weight: 300;
+      max-width: 1400px;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        "chart right"
+        "credit right"
+        "bidding bidding";
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
+      transition: all 0.3s ease;
+    }
+    
+    .dashboard.expanded {
+      grid-template-areas:
+        "chart"
+        "credit"
+        "right"
+        "bidding";
+    }
+    
+    .chart-container {
+      grid-area: chart;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      padding: 20px;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.3s ease;
+      min-width: 640px; /* 设置图表最小宽度 */
+    }
+    
+    .chart-container.expanded {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1000;
+      height: auto;
+      min-width: unset;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+    
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+    
+    .tab-button {
+      padding: 8px 16px;
+      border: none;
+      background: #eef5ff;
+      color: #2c5282;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      flex: 1;
+      min-width: 120px;
+      max-width: 200px;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .tab-button:hover {
+      background: #dbeafe;
+    }
+    
+    .tab-button.active {
+      background: #3b82f6;
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .tab-button i {
+      font-size: 16px;
+    }
+    
+    .filter-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .filter-row {
+      display: flex;
+      width: 100%;
+      max-width: 800px;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .search-container {
+      position: relative;
+      flex: 1;
+      max-width: 400px;
+    }
+    
+    .search-input {
+      padding: 10px 15px 10px 40px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #f8fafc;
+      width: 100%;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+      transition: all 0.3s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+    
+    .date-range {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 15px;
+      font-size: 14px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    
+    .expand-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 15px;
+      font-size: 14px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .expand-btn:hover {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+    }
+    
+    .chart-wrapper {
+      flex: 1;
+      position: relative;
+      width: 100%; /* 确保图表容器宽度自适应 */
+    }
+    
+    #main {
+      width: 100%;
+      height: 100%;
+      transition: opacity 0.3s;
+    }
+    
+    .stats-panel {
+      grid-area: right;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    
+    .panel-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .refresh-btn {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .refresh-btn:hover {
+      background: #bfdbfe;
+    }
+    
+    .refresh-btn.refreshing {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    
+    .stat-card {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    
+    .stat-title {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1e293b;
+      margin: 3px 0;
+    }
+    
+    .stat-change {
+      font-size: 0.85rem;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .positive {
+      color: #10b981;
+    }
+    
+    .negative {
+      color: #ef4444;
+    }
+    
+    .top-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 8px;
+      max-height: 680px;
+      /* 隐藏滚动条 */
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE 10+ */
+    }
+    
+    .top-list::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+    
+    /* 在悬停时显示滚动条（仅适用于桌面） */
+    @media (min-width: 769px) {
+      .top-list:hover {
+        scrollbar-width: thin; /* Firefox */
+        scrollbar-color: #cbd5e1 #f1f5f9; /* Firefox */
+      }
+      .top-list:hover::-webkit-scrollbar {
+        display: block; /* Chrome, Safari, Opera */
+        width: 6px;
+      }
+      .top-list:hover::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+      }
+      .top-list:hover::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      .top-list:hover::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    }
+    
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      font-weight: 700;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 2;
+    }
+    
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .list-item:hover {
+      background-color: #f8fafc;
+    }
+    
+    .company-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0; /* 防止内容溢出 */
+    }
+    
+    .rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    
+    .rank.top3 {
+      background: #1d4ed8;
+      color: white;
+    }
+    
+    .rank-1 {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      color: white;
+    }
+    
+    .rank-2 {
+      background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+      color: white;
+    }
+    
+    .rank-3 {
+      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+      color: white;
+    }
+    
+    .company-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0; /* 防止内容溢出 */
+    }
+    
+    .company-score {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+    
+    .trend-indicator {
+      font-size: 12px;
+      margin-left: 5px;
+      flex-shrink: 0;
+    }
+    
+    .up {
+      color: #10b981;
+    }
+    
+    .down {
+      color: #ef4444;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      font-size: 0.9rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 10;
+      border-radius: 14px;
+      backdrop-filter: blur(2px);
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #e2e8f0;
+      border-top: 5px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+      font-size: 1.1rem;
+      color: #475569;
+      font-weight: 600;
+    }
+    
+    .no-data {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+    
+    /* 中标信息展示区 */
+    .bidding-section {
+      grid-area: bidding;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      padding: 20px;
+    }
+    
+    .bidding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .bidding-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .bidding-title i {
+      color: #10b981;
+    }
+    
+    .bidding-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .bidding-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+    
+    .bidding-card:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, #f59e0b, #fbbf24);
+    }
+    
+    .bidding-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+    }
+    
+    .bidding-company {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .bidding-project {
+      font-weight: 600;
+      color: #1e40af;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+    
+    .bidding-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    
+    .bidding-price {
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .bidding-date {
+      background: #f0fdf4;
+      color: #10b981;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    
+    .bidding-new-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #ef4444;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .bidding-details {
+      background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+      color: white;
+      padding: 8px 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-top: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .bidding-details:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+    
+    .trend-chart-container {
+      height: 60px;
+      margin-top: 10px;
+      position: relative;
+    }
+    
+    .trend-chart-label {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      font-size: 10px;
+      color: #64748b;
+      z-index: 2;
+    }
+    
+    .load-more-btn {
+      background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      width: 100%;
+      touch-action: manipulation;
+    }
+    
+    .load-more-btn:hover {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    .load-more-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    /* 回到顶部按钮 */
+    .back-to-top {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    
+    .back-to-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .back-to-top:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+    }
+    
+    .back-to-top i {
+      font-size: 20px;
+    }
+    
+    /* 移动设备优化 */
+    @media (max-width: 1100px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        grid-template-areas:
+          "chart"
+          "right"
+          "credit"
+          "bidding";
+      }
+      
+      .stats-panel {
+        max-width: 100%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .container {
+        border-radius: 14px;
+      }
+      
+      header {
+        padding: 18px 15px;
+        border-radius: 14px 14px 0 0;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+        gap: 10px;
+      }
+      
+      .subtitle {
+        font-size: 0.85rem;
+      }
+      
+      .dashboard {
+        padding: 15px;
+        gap: 15px;
+      }
+      
+      .chart-container {
+        height: 520px;
+        padding: 15px;
+        min-width: 100%; /* 移动设备上不需要固定最小宽度 */
+      }
+      
+      .tab-button {
+        padding: 8px 12px;
+        font-size: 13px;
+        min-width: 100px;
+      }
+      
+      .date-range {
+        font-size: 13px;
+        padding: 7px 12px;
+      }
+      
+      .stats-panel {
+        padding: 15px;
+      }
+      
+      .panel-title {
+        font-size: 1.1rem;
+      }
+      
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-title {
+        font-size: 0.85rem;
+      }
+      
+      .stat-value {
+        font-size: 1.4rem;
+      }
+      
+      .stat-change {
+        font-size: 0.8rem;
+      }
+      
+      .company-name {
+        max-width: 120px;
+        font-size: 13px;
+      }
+      
+      .footer {
+        padding: 15px;
+        font-size: 0.85rem;
+      }
+      
+      .bidding-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .bidding-title {
+        font-size: 1.15rem;
+      }
+      
+      .bidding-section {
+        margin: 0;
+      }
+      
+      .back-to-top {
+        bottom: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+      }
+    }
+    
+    @media (max-width: 600px) {
+      .filter-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .search-container {
+        max-width: 100%;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .chart-container {
+        height: 550px;
+      }
+      
+      .tabs {
+        gap: 6px;
+      }
+      
+      .tab-button {
+        padding: 7px 10px;
+        font-size: 12px;
+        min-width: 90px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .company-name {
+        max-width: 100px;
+      }
+      
+      .bidding-info {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .bidding-price, .bidding-date {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    
+    /* 新增的水利水电工程和电力工程样式 */
+    .water-electricity {
+      background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+      color: white;
+    }
+    
+    .electric-power {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      color: white;
+    }
+    
+    .expanded-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 999;
+      display: none;
+    }
+    
+    .expanded-overlay.visible {
+      display: block;
+    }
+    
+    .close-expand {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #ef4444;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1001;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: none;
+    }
+    
+    /* 信誉分明细卡片 */
+    .credit-detail-section {
+      grid-area: credit;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      max-width: 690px; /* 添加最大宽度限制 */
+      width: 100%; /* 确保宽度自适应 */
+      overflow-x: hidden; /* 防止水平溢出 */
+    }
+    
+    .credit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    
+    .credit-title {
+      font-size: 1.3rem;
+      font-weight: 573;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100% - 50px); /* 防止公司名过长 */
+      overflow: hidden;
+    }
+    
+    .credit-title i {
+      color: #3b82f6;
+    }
+    
+    .credit-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .credit-tab {
+      padding: 10px 20px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      color: #64748b;
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+    }
+    
+    .credit-tab.active {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .credit-tab:hover:not(.active) {
+      background: #dbeafe;
+    }
+    
+    .credit-content {
+      display: none;
+    }
+    
+    .credit-content.active {
+      display: block;
+    }
+    
+    .credit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-height: 450px;
+      overflow-y: auto;
+      padding-right: 10px;
+      flex: 1;
+    }
+    
+    .credit-item {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 15px;
+      border: 1px solid #e2e8f0;
+      position: relative;
+      transition: all 0.3s;
+      word-break: break-word; /* 确保长文本自动换行 */
+    }
+    
+    .credit-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    .credit-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .credit-item-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1e40af;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%; /* 确保标题不会溢出 */
+    }
+    
+    .credit-item-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    
+    .new-badge {
+      background: #10b981;
+      color: white;
+    }
+    
+    .expired-badge {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .credit-item-info {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px 15px;
+      font-size: 0.9rem;
+    }
+    
+    .credit-item-label {
+      font-weight: 600;
+      color: #4b5563;
+      min-width: 80px;
+    }
+    
+    .credit-item-value {
+      color: #1f2937;
+      word-break: break-word; /* 确保长文本自动换行 */
+    }
+    
+    .credit-item-footer {
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      color: #6b7280;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .no-credit-data {
+      text-align: center;
+      padding: 30px;
+      color: #94a3b8;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .no-credit-data i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      color: #cbd5e1;
+    }
+    
+    /* 预加载动画 */
+    .preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a56db;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+    
+    .preloader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    
+    .preloader-logo {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .preloader-logo i {
+      font-size: 60px;
+      color: #1a56db;
+    }
+    
+    .preloader-text {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    
+    .count-badge {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      margin-left: 5px;
+    }
+    /* 图表容器宽度优化 */
+    #main {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    
+    /* 确保图表容器完全响应式 */
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* 在移动端调整图表高度 */
+    @media (max-width: 768px) {
+      .chart-container {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 预加载动画 -->
+  <div class="preloader" id="preloader">
+    <div class="preloader-logo">
+      <i class="fas fa-chart-line"></i>
+    </div>
+    <div class="spinner"></div>
+    <div class="preloader-text">正在加载企业数据平台...</div>
+  </div>
+  
+  <!-- 回到顶部按钮 -->
+  <div class="back-to-top" id="backToTop">
+    <i class="fas fa-arrow-up"></i>
+  </div>
+  
+  <!-- 全屏遮罩 -->
+  <div class="expanded-overlay" id="expandedOverlay"></div>
+  
+  <div class="container">
+    <header>
+      <svg class="header-overlay" width="50%" viewBox="0 0 400 200" preserveAspectRatio="none">
+        <path d="M0,0 C150,250 350,0 500,150 L500,00 L0,0 Z" fill="white"/>
+      </svg>
+      <h1><i class="fas fa-chart-line"></i> 宜昌市企业信用与中标信息平台</h1>
+      <p class="subtitle">实时追踪企业诚信分值变化，展示最新中标项目信息</p>
+    </header>
+    
+    <div class="dashboard" id="dashboard">
+      <div class="chart-container" id="chartContainer">
+        <div class="close-expand" id="closeExpand">
+          <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="controls">
+          <div class="tabs">
+            <button class="tab-button active" data-file="https://raw.githubusercontent.com/coomaso/fengfeng/refs/heads/main/excel_output/%E5%BB%BA%E7%AD%91%E5%B7%A5%E7%A8%8B%E6%80%BB%E6%89%BF%E5%8C%85%E4%BF%A1%E7%94%A8%E5%88%86%E6%8E%92%E5%BA%8F_top10.json">
+              <i class="fas fa-building"></i> 施工总包
+            </button>
+            <button class="tab-button" data-file="https://raw.githubusercontent.com/coomaso/fengfeng/refs/heads/main/excel_output/%E5%B8%82%E6%94%BF%E5%85%AC%E7%94%A8%E5%B7%A5%E7%A8%8B%E4%BF%A1%E7%94%A8%E5%88%86%E6%8E%92%E5%BA%8F_top10.json">
+              <i class="fas fa-road"></i> 市政工程
+            </button>
+            <button class="tab-button" data-file="https://raw.githubusercontent.com/coomaso/fengfeng/refs/heads/main/excel_output/%E8%A3%85%E4%BF%AE%E8%A3%85%E9%A5%B0%E5%B7%A5%E7%A8%8B%E4%BF%A1%E7%94%A8%E5%88%86%E6%8E%92%E5%BA%8F_top10.json">
+              <i class="fas fa-paint-roller"></i> 装修工程
+            </button>
+            <button class="tab-button" data-file="https://raw.githubusercontent.com/coomaso/fengfeng/refs/heads/main/excel_output/%E6%B0%B4%E5%88%A9%E6%B0%B4%E7%94%B5%E5%B7%A5%E7%A8%8B%E4%BF%A1%E7%94%A8%E5%88%86%E6%8E%92%E5%BA%8F_top10.json">
+              <i class="fas fa-water"></i> 水利工程
+            </button>
+            <button class="tab-button" data-file="https://raw.githubusercontent.com/coomaso/fengfeng/refs/heads/main/excel_output/%E7%94%B5%E5%8A%9B%E5%B7%A5%E7%A8%8B%E4%BF%A1%E7%94%A8%E5%88%86%E6%8E%92%E5%BA%8F_top10.json">
+              <i class="fas fa-bolt"></i> 电力工程
+            </button>
+          </div>
+          
+          <div class="filter-controls">
+            <div class="filter-row">
+              <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索企业名称...">
+              </div>
+              
+              <div class="date-range">
+                <i class="fas fa-calendar-alt"></i> <span id="dataRange">数据范围: 2025年5月 - 2025年6月</span>
+              </div>
+              
+              <button class="expand-btn" id="expandChart">
+                <i class="fas fa-expand"></i> 全屏
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="chart-wrapper">
+          <div id="main"></div>
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">正在加载企业数据...</div>
+          </div>
+          <div class="no-data" id="noData" style="display: none;">
+            <i class="fas fa-database" style="font-size: 2.5rem; margin-bottom: 10px;"></i>
+            <p>暂无可用数据</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 信誉分明细卡片 -->
+      <div class="credit-detail-section">
+        <div class="credit-header">
+          <div class="credit-title">
+            <i class="fas fa-file-invoice"></i> 企业信誉分明细
+            <span id="companyName">湖北盛荣建设集团有限公司</span>
+          </div>
+          <button class="refresh-btn" id="refreshCredit">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        
+        <div class="credit-tabs">
+          <div class="credit-tab active" data-type="lhxw">良好行为 <span id="goodCount" class="count-badge">0</span></div>
+          <div class="credit-tab" data-type="blxw">不良行为 <span id="badCount" class="count-badge">0</span></div>
+        </div>
+        
+        <div class="credit-content active" id="lhxwContent">
+          <div class="credit-list" id="goodBehaviorList">
+            <!-- 良好行为列表 -->
+          </div>
+        </div>
+        
+        <div class="credit-content" id="blxwContent">
+          <div class="credit-list" id="badBehaviorList">
+            <!-- 不良行为列表 -->
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-panel">
+        <div class="panel-header">
+          <div class="panel-title">行业数据概览</div>
+          <button class="refresh-btn" id="refreshStats">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-title"><i class="fas fa-star"></i> 最高诚信分值</div>
+            <div class="stat-value" id="maxScore">175.0</div>
+            <div class="stat-change" id="maxScoreCompany">
+              湖北广盛建设集团
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-title"><i class="fas fa-building"></i> 上榜企业数量</div>
+            <div class="stat-value" id="companyCount">10</div>
+            <div class="stat-change positive">
+              <i class="fas fa-arrow-trend-up"></i> 行业领先
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-title"><i class="fas fa-chart-line"></i> 平均诚信分值</div>
+            <div class="stat-value" id="avgScore">128.5</div>
+            <div class="stat-change positive">
+              <i class="fas fa-arrow-up"></i> <span id="avgChange">较上月增长 2.5%</span>
+            </div>
+            <div class="trend-chart-container">
+              <div class="trend-chart-label">趋势图</div>
+              <canvas id="avgTrendChart" width="300" height="60"></canvas>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-title"><i class="fas fa-trophy"></i> 榜首保持天数</div>
+            <div class="stat-value" id="topDays">23</div>
+            <div class="stat-change">
+              <span id="topCompany">湖北广盛建设集团</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-header">
+          <div class="panel-title">今日企业排名</div>
+          <div class="panel-subtitle" id="currentDate">2025年6月21日</div>
+        </div>
+        
+        <div class="top-list" id="rankingList">
+          <!-- 动态生成排名列表 -->
+        </div>
+      </div>
+      
+      <!-- 中标信息展示区 -->
+      <div class="bidding-section">
+        <div class="bidding-header">
+          <div class="bidding-title">
+            <i class="fas fa-bullhorn"></i> 最新中标项目公告
+          </div>
+          <button class="refresh-btn" id="refreshBidding">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        
+        <div class="bidding-grid" id="biddingCards">
+          <div class="loading" id="biddingLoading">
+            <div class="spinner"></div>
+            <div class="loading-text">正在加载最新中标信息...</div>
+          </div>
+        </div>
+        
+        <div class="load-more-container" id="loadMoreContainer" style="display: none; margin-top: 20px;">
+          <button class="load-more-btn" id="loadMoreBtn">
+            <i class="fas fa-plus-circle"></i> 加载更多中标信息
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>数据来源：宜昌市企业信用信息平台 | 最后更新：<span id="updateDate">2025年6月21日</span></p>
+      <p>© 2025 宜昌市信用监管局 - 企业信用监测中心</p>
+    </div>
+  </div>
+  
+  <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    // 页面加载后执行
+    document.addEventListener('DOMContentLoaded', function() {
+      // 预加载动画
+      const preloader = document.getElementById('preloader');
+      
+      // 隐藏预加载动画
+      setTimeout(() => {
+        preloader.classList.add('hidden');
+        
+        // 初始化应用
+        initApplication();
+      }, 1500);
+    });
+    
+    function initApplication() {
+      const chartDom = document.getElementById('main');
+      const myChart = echarts.init(chartDom);
+      const loadingElement = document.getElementById('loading');
+      const noDataElement = document.getElementById('noData');
+      const searchInput = document.getElementById('searchInput');
+      const rankingList = document.getElementById('rankingList');
+      const updateDateElement = document.getElementById('updateDate');
+      const currentDateElement = document.getElementById('currentDate');
+      const dataRangeElement = document.getElementById('dataRange');
+      const biddingCards = document.getElementById('biddingCards');
+      const biddingLoading = document.getElementById('biddingLoading');
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      const loadMoreContainer = document.getElementById('loadMoreContainer');
+      const backToTop = document.getElementById('backToTop');
+      const expandChartBtn = document.getElementById('expandChart');
+      const closeExpandBtn = document.getElementById('closeExpand');
+      const expandedOverlay = document.getElementById('expandedOverlay');
+      const chartContainer = document.getElementById('chartContainer');
+      const dashboard = document.getElementById('dashboard');
+      const goodBehaviorList = document.getElementById('goodBehaviorList');
+      const badBehaviorList = document.getElementById('badBehaviorList');
+      const goodCount = document.getElementById('goodCount');
+      const badCount = document.getElementById('badCount');
+      const creditTabs = document.querySelectorAll('.credit-tab');
+      const creditContents = document.querySelectorAll('.credit-content');
+      const companyNameElement = document.getElementById('companyName');
+      const refreshStatsBtn = document.getElementById('refreshStats');
+      const refreshBiddingBtn = document.getElementById('refreshBidding');
+      const refreshCreditBtn = document.getElementById('refreshCredit');
+      
+      // 存储当前图表数据
+      let currentChartData = null;
+      let currentCategory = null;
+      let rankHistory = {};
+      let isChartExpanded = false;
+      
+      // 图表数据缓存
+      const chartDataCache = new Map();
+      
+      // 中标信息分页相关
+      let biddingPage = 1;
+      const initialPageSize = 6;
+      const incrementSize = 6;
+      let biddingData = [];
+      
+      // 平均分趋势图实例
+      let avgTrendChart = null;
+      
+      // 信誉分数据
+      let creditData = null;
+      
+      // 格式化日期
+      function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const year = dateStr.substring(0, 4);
+        const month = String(dateStr.substring(4, 6)).padStart(2, '0');
+        const day = String(dateStr.substring(6, 8)).padStart(2, '0');
+        return `${year}年${month}月${day}日`;
+      }
+      
+      // 获取最新数据日期
+      function getLatestDate(data) {
+        if (!data || data.length === 0) return '';
+        const latest = data[data.length - 1];
+        const dateStr = latest.TIMEamp.substring(0, 8);
+        return formatDate(dateStr);
+      }
+      
+      // 获取日期范围
+      function getDateRange(data) {
+        if (!data || data.length === 0) return '';
+        
+        const first = data[0];
+        const last = data[data.length - 1];
+        
+        const startDate = first.TIMEamp.substring(0, 6);
+        const endDate = last.TIMEamp.substring(0, 6);
+        
+        return `数据范围: ${startDate.substring(0,4)}年${startDate.substring(4,6)}月 - ${endDate.substring(0,4)}年${endDate.substring(4,6)}月`;
+      }
+      
+      // 计算统计数据
+      function calculateStats(data) {
+        if (!data || data.length === 0) return null;
+        
+        const latest = data[data.length - 1];
+        const companies = latest.DATAlist;
+        
+        // 计算平均分
+        const totalScore = companies.reduce((sum, company) => sum + company.诚信分值, 0);
+        const avgScore = totalScore / companies.length;
+        
+        // 最高分
+        const maxScore = Math.max(...companies.map(c => c.诚信分值));
+        const maxCompany = companies.find(c => c.诚信分值 === maxScore).企业名称;
+        
+        // 榜首保持天数
+        const topCompany = companies[0].企业名称;
+        let topDays = 0;
+        for (let i = data.length - 1; i >= 0; i--) {
+          if (data[i].DATAlist[0].企业名称 === topCompany) {
+            topDays++;
+          } else {
+            break;
+          }
+        }
+        
+        // 计算平均分变化
+        let avgChange = "无历史数据";
+        if (data.length > 1) {
+          const prevLatest = data[data.length - 2];
+          const prevCompanies = prevLatest.DATAlist;
+          const prevTotalScore = prevCompanies.reduce((sum, company) => sum + company.诚信分值, 0);
+          const prevAvgScore = prevTotalScore / prevCompanies.length;
+          
+          const change = ((avgScore - prevAvgScore) / prevAvgScore * 100).toFixed(1);
+          avgChange = `较上期${change >= 0 ? '增长' : '下降'} ${Math.abs(change)}%`;
+        }
+        
+        // 计算平均分系列
+        const avgSeries = data.map(d => {
+          const total = d.DATAlist.reduce((s, c) => s + c.诚信分值, 0);
+          return (total / d.DATAlist.length).toFixed(2);
+        });
+        
+        // 时间标签
+        const timeLabels = data.map(d => formatDate(d.TIMEamp.substring(0, 8)));
+        
+        return {
+          avgScore: avgScore.toFixed(1),
+          maxScore: maxScore.toFixed(1),
+          maxCompany: maxCompany,
+          companyCount: companies.length,
+          topDays: topDays,
+          topCompany: topCompany,
+          avgChange: avgChange,
+          avgSeries: avgSeries,
+          timeLabels: timeLabels
+        };
+      }
+      
+      // 更新统计面板
+      function updateStatsPanel(stats) {
+        if (!stats) return;
+        
+        document.getElementById('avgScore').textContent = stats.avgScore;
+        document.getElementById('maxScore').textContent = stats.maxScore;
+        document.getElementById('maxScoreCompany').textContent = stats.maxCompany;
+        document.getElementById('companyCount').textContent = stats.companyCount;
+        document.getElementById('topDays').textContent = stats.topDays;
+        document.getElementById('topCompany').textContent = stats.topCompany;
+        document.getElementById('avgChange').textContent = stats.avgChange;
+        
+        // 渲染平均分趋势图
+        const ctx = document.getElementById('avgTrendChart').getContext('2d');
+        
+        // 销毁旧图表实例
+        if (avgTrendChart) {
+          avgTrendChart.destroy();
+        }
+        
+        // 创建新的迷你趋势图
+        avgTrendChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: stats.timeLabels,
+            datasets: [{
+              label: '平均诚信分',
+              data: stats.avgSeries,
+              borderColor: '#3b82f6',
+              borderWidth: 2,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              tension: 0.4,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(255,255,255,0.95)',
+                titleColor: '#1e293b',
+                bodyColor: '#475569',
+                borderColor: '#e2e8f0',
+                borderWidth: 1,
+                padding: 10,
+                displayColors: false,
+                callbacks: {
+                  title: function(tooltipItems) {
+                    return tooltipItems[0].label;
+                  },
+                  label: function(context) {
+                    return `平均分: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { 
+                display: false 
+              },
+              y: { 
+                display: false,
+                min: Math.min(...stats.avgSeries) - 5,
+                max: Math.max(...stats.avgSeries) + 5
+              }
+            },
+            interaction: {
+              intersect: false,
+              mode: 'index'
+            },
+            layout: {
+              padding: {
+                top: 10,
+                bottom: 5
+              }
+            }
+          }
+        });
+      }
+      
+      // 更新今日排名
+      function updateRankingList(data) {
+        if (!data || data.length === 0) return;
+        
+        const latest = data[data.length - 1];
+        const companies = latest.DATAlist;
+        
+        let listHTML = `
+          <div class="list-header">
+            <div>企业名称</div>
+            <div>诚信分值</div>
+          </div>
+        `;
+        
+        companies.forEach((company, index) => {
+          // 确定排名变化
+          let trendIcon = '';
+          let trendClass = '';
+          
+          if (data.length > 1) {
+            const prevDay = data[data.length - 2];
+            const prevCompany = prevDay.DATAlist.find(c => c.企业名称 === company.企业名称);
+            
+            if (prevCompany) {
+              const rankChange = prevCompany.排名 - company.排名;
+              
+              if (rankChange > 0) {
+                trendIcon = '<i class="fas fa-arrow-up"></i>';
+                trendClass = 'up';
+              } else if (rankChange < 0) {
+                trendIcon = '<i class="fas fa-arrow-down"></i>';
+                trendClass = 'down';
+              }
+            }
+          }
+          
+          listHTML += `
+            <div class="list-item" data-company="${company.企业名称}">
+              <div class="company-info">
+                <div class="rank ${index < 3 ? 'top3' : ''} rank-${index+1}">${index+1}</div>
+                <div class="company-name">${company.企业名称}</div>
+              </div>
+              <div class="company-score">
+                ${company.诚信分值}
+                ${trendIcon ? `<span class="trend-indicator ${trendClass}">${trendIcon}</span>` : ''}
+              </div>
+            </div>
+          `;
+        });
+        
+        rankingList.innerHTML = listHTML;
+        currentDateElement.textContent = formatDate(latest.TIMEamp.substring(0, 8));
+        updateDateElement.textContent = formatDate(latest.TIMEamp.substring(0, 8));
+        
+        // 添加企业点击事件
+        document.querySelectorAll('.list-item').forEach(item => {
+          item.addEventListener('click', function() {
+            const company = this.dataset.company;
+            companyNameElement.textContent = company;
+            loadCreditData(company);
+          });
+        });
+      }
+      
+      // 构建排名历史
+      function buildRankHistory(data) {
+        rankHistory = {};
+        
+        data.forEach((dayData, dayIndex) => {
+          dayData.DATAlist.forEach(companyData => {
+            const name = companyData.企业名称;
+            if (!rankHistory[name]) {
+              rankHistory[name] = new Array(data.length).fill(null);
+            }
+            rankHistory[name][dayIndex] = companyData.排名;
+          });
+        });
+      }
+      
+      // 格式化金额为中文习惯（亿/万）
+      function formatAmountChinese(amount) {
+        if (!amount) return '0.00';
+        const num = parseFloat(amount);
+        if (isNaN(num)) return amount;
+        
+        if (num >= 100000000) {
+          return (num / 100000000).toFixed(2) + '亿';
+        } else if (num >= 10000) {
+          return (num / 10000).toFixed(2) + '万';
+        } else {
+          return num.toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        }
+      }
+      
+      // 渲染图表
+      function renderChartFromData(data, category) {
+        if (!data || data.length === 0) {
+          noDataElement.style.display = 'block';
+          return;
+        }
+        
+        currentChartData = data;
+        currentCategory = category;
+        
+        // 构建排名历史
+        buildRankHistory(data);
+        
+        // 格式化时间标签
+        const timeLabels = data.map(entry => {
+          const dateStr = entry.TIMEamp.substring(0, 8);
+          return formatDate(dateStr);
+        });
+        
+        // 更新日期范围
+        dataRangeElement.textContent = getDateRange(data);
+        
+        const latest = data[data.length - 1];
+        const companies = latest.DATAlist.map(item => item.企业名称);
+        
+        // 生成系列数据
+        const series = companies.map(company => {
+          return {
+            name: company,
+            type: 'line',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 6,
+            lineStyle: {
+              width: 2.5
+            },
+            data: data.map(day => {
+              const found = day.DATAlist.find(item => item.企业名称 === company);
+              return found ? found.诚信分值 : null;
+            }),
+          };
+        });
+        
+        // 图表配置 - 响应式设计
+        const isMobile = window.innerWidth < 768;
+        
+        const option = {
+          tooltip: {
+            trigger: 'axis',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: '#e2e8f0',
+            borderWidth: 1,
+            padding: [10, 15],
+            textStyle: {
+              color: '#4a5568',
+              fontSize: 13
+            },
+            axisPointer: {
+              type: 'line',
+              lineStyle: {
+                color: '#a0aec0',
+                width: 1,
+                type: 'dashed'
+              }
+            },
+            formatter: function(params) {
+              const index = params[0].dataIndex;
+              const dayData = data[index];
+              
+              if (!dayData || !dayData.DATAlist || dayData.DATAlist.length === 0) {
+                return `<div style="font-weight:600;margin-bottom:8px;color:#2d3748;">${timeLabels[index]}</div>暂无数据`;
+              }
+              
+              // 按当日实际排名顺序显示
+              const dayList = dayData.DATAlist;
+              let result = `<div style="font-weight:700;margin-bottom:10px;font-size:15px;color:#1e40af;">${timeLabels[index]}</div>`;
+              
+              dayList.forEach((item, idx) => {
+                const companyName = item.企业名称;
+                const score = item.诚信分值;
+                
+                // 获取前一天的排名
+                let rankChange = '';
+                if (index > 0) {
+                  const prevRank = rankHistory[companyName][index-1];
+                  if (prevRank !== null && prevRank !== undefined) {
+                    const change = prevRank - (idx + 1);
+                    if (change > 0) {
+                      rankChange = `<span style="color:#10b981;font-size:12px;margin-left:6px;">↑${change}</span>`;
+                    } else if (change < 0) {
+                      rankChange = `<span style="color:#ef4444;font-size:12px;margin-left:6px;">↓${Math.abs(change)}</span>`;
+                    } else {
+                      rankChange = `<span style="color:#a0aec0;font-size:12px;margin-left:6px;">→0</span>`;
+                    }
+                  } else {
+                    rankChange = `<span style="color:#3b82f6;font-size:12px;margin-left:6px;">新上榜</span>`;
+                  }
+                } else {
+                  rankChange = `<span style="color:#3b82f6;font-size:12px;margin-left:6px;">新上榜</span>`;
+                }
+                
+                result += `
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                    <div style="display:flex;align-items:center;max-width:70%;">
+                      <span style="display:inline-block;width:26px;height:26px;text-align:center;line-height:26px;background:${idx < 3 ? '#1d4ed8' : '#dbeafe'};color:${idx < 3 ? 'white' : '#1d4ed8'};border-radius:6px;font-weight:600;margin-right:8px;flex-shrink:0;">${idx+1}</span>
+                      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${companyName}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;flex-shrink:0;">
+                      <span style="font-weight:700;">${score}</span>
+                      ${rankChange}
+                    </div>
+                  </div>
+                `;
+              });
+              
+              return result;
+            }
+          },
+          legend: {
+            type: 'scroll',
+            orient: isMobile ? 'horizontal' : 'vertical',
+            right: isMobile ? 'auto' : 10,
+            top: isMobile ? 5 : 40,
+            bottom: isMobile ? 20 : 30,
+            left: isMobile ? 'center' : 'auto',
+            textStyle: {
+              color: '#4a5568',
+              fontSize: isMobile ? 10 : 11
+            },
+            pageTextStyle: {
+              color: '#4a5568',
+              fontSize: isMobile ? 10 : 11
+            },
+            pageIconColor: '#3b82f6',
+            pageIconInactiveColor: '#a0aec0',
+            data: companies,
+            formatter: function(name) {
+              return name.length > 8 ? name.substring(0, 8) + '...' : name;
+            },
+            itemGap: isMobile ? 4 : 6,
+            itemHeight: isMobile ? 12 : 14,
+            itemWidth: isMobile ? 60 : 70,
+            lineHeight: isMobile ? 14 : 16
+          },
+          grid: {
+            left: '3%',
+            right: isMobile ? '3%' : '18%',
+            bottom: isMobile ? '22%' : '3%',
+            top: isMobile ? '15%' : '5%',
+            containLabel: true
+          },
+          toolbox: {
+            feature: {
+              saveAsImage: {
+                title: '保存',
+                pixelRatio: 2,
+                iconStyle: {
+                  borderColor: '#3b82f6'
+                }
+              },
+              dataZoom: {
+                title: {
+                  zoom: '缩放',
+                  back: '还原'
+                },
+                iconStyle: {
+                  borderColor: '#3b82f6'
+                }
+              },
+              myExportCSV: {
+                show: true,
+                title: '导出CSV',
+                icon: 'path://M512 0C229.3 0 0 229.3 0 512s229.3 512 512 512 512-229.3 512-512S794.7 0 512 0zM682.7 682.7H341.3v-85.4h341.3v85.4zM682.7 512H341.3v-85.3h341.3V512zM682.7 341.3H341.3v-85.3h341.3v85.3z',
+                onclick: function() {
+                  if (!currentChartData) return alert("暂无数据可导出！");
+                  const latest = currentChartData[currentChartData.length - 1];
+                  const header = ['排名', '企业名称', '诚信分值'];
+                  const rows = latest.DATAlist.map(item => [item.排名, item.企业名称, item.诚信分值]);
+                  const csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${currentCategory || '导出数据'}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }
+              }
+            },
+            right: isMobile ? 10 : 20,
+            top: isMobile ? 5 : 15,
+            itemSize: isMobile ? 14 : 16,
+            iconStyle: {
+              borderColor: '#3b82f6'
+            }
+          },
+          dataZoom: [
+            {
+              type: 'inside',
+              start: 50,
+              end: 100
+            },
+            {
+              type: 'slider',
+              show: true,
+              backgroundColor: '#f8fafc',
+              fillerColor: 'rgba(59, 130, 246, 0.2)',
+              borderColor: '#e2e8f0',
+              textStyle: {
+                color: '#4a5568',
+                fontSize: isMobile ? 11 : 12
+              },
+              handleSize: isMobile ? 15 : 18,
+              handleStyle: {
+                color: '#3b82f6',
+                borderColor: '#3b82f6'
+              },
+              bottom: isMobile ? 45 : 10,
+              height: isMobile ? 20 : 25
+            }
+          ],
+          xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            axisLine: {
+              lineStyle: {
+                color: '#a0aec0'
+              }
+            },
+            axisLabel: {
+              color: '#475569',
+              rotate: isMobile ? 45 : 30,
+              interval: isMobile ? 'auto' : 0,
+              margin: isMobile ? 15 : 0,
+              fontSize: isMobile ? 11 : 12
+            },
+            data: timeLabels
+          },
+          yAxis: {
+            type: 'value',
+            name: '诚信分值',
+            nameTextStyle: {
+              color: '#475569',
+              padding: [0, 0, 0, -40],
+              fontSize: isMobile ? 12 : 13
+            },
+            axisLine: {
+              lineStyle: {
+                color: '#a0aec0'
+              }
+            },
+            axisLabel: {
+              color: '#475569',
+              fontSize: isMobile ? 11 : 12
+            },
+            splitLine: {
+              lineStyle: {
+                color: '#edf2f7',
+                type: 'dashed'
+              }
+            }
+          },
+          series: series
+        };
+        
+        myChart.setOption(option);
+        
+        // 更新统计信息
+        const stats = calculateStats(data);
+        updateStatsPanel(stats);
+        
+        // 更新排名列表
+        updateRankingList(data);
+        
+        // 加载排名第一的企业的信誉分数据
+        if (data && data.length > 0) {
+          const firstCompany = data[data.length - 1].DATAlist[0].企业名称;
+          companyNameElement.textContent = firstCompany;
+          loadCreditData(firstCompany);
+        }
+        
+        loadingElement.style.display = 'none';
+      }
+      
+      // 加载并渲染图表
+      async function loadAndRenderChart(jsonFile, category) {
+        loadingElement.style.display = 'flex';
+        noDataElement.style.display = 'none';
+        myChart.clear();
+        
+        // 检查缓存
+        if (chartDataCache.has(jsonFile)) {
+          const cachedData = chartDataCache.get(jsonFile);
+          renderChartFromData(cachedData, category);
+          loadingElement.style.display = 'none';
+          return;
+        }
+        
+        try {
+          // 使用代理加速国内访问
+          const proxyUrl = jsonFile.replace('https://raw.githubusercontent.com', 'https://gh-proxy.com/raw.githubusercontent.com');
+          const response = await fetch(proxyUrl);
+          const data = await response.json();
+          chartDataCache.set(jsonFile, data);
+          renderChartFromData(data, category);
+        } catch (e) {
+          console.error("加载或解析数据失败：", e);
+          noDataElement.style.display = 'block';
+          loadingElement.style.display = 'none';
+        }
+      }
+      
+      // 搜索功能
+      function filterCompanies(searchTerm) {
+        if (!currentChartData || !searchTerm) {
+          myChart.setOption({ legend: { selected: null } });
+          return;
+        }
+        
+        const latest = currentChartData[currentChartData.length - 1];
+        const companies = latest.DATAlist.map(item => item.企业名称);
+        
+        const selected = {};
+        companies.forEach(company => {
+          selected[company] = company.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+        
+        myChart.setOption({
+          legend: { selected: selected }
+        });
+      }
+      
+      // 获取今天日期字符串（YYYY-MM-DD格式）
+      function getTodayDateString() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      // 渲染中标信息分页
+      function renderBiddingPage() {
+        const start = 0;
+        const end = initialPageSize + (biddingPage - 1) * incrementSize;
+        const pageData = biddingData.slice(start, end);
+        
+        if (pageData.length === 0) {
+          biddingCards.innerHTML = '<div class="no-data"><i class="fas fa-database"></i> <p>暂无中标信息</p></div>';
+          loadMoreBtn.disabled = true;
+          loadMoreBtn.textContent = '没有更多数据';
+          return;
+        }
+
+        biddingCards.innerHTML = '';
+        
+        pageData.forEach(item => {
+          const parsed = item.parsed_data;
+          const date = item.raw_data.infodate;
+          const formattedDate = date ? `${date.substring(0, 4)}年${date.substring(5, 7)}月${date.substring(8, 10)}日` : '未知日期';
+          const detailUrl = 'https://ggzy.sc.yichang.gov.cn' + item.infourl;
+          const isToday = date === getTodayDateString();
+
+          const card = document.createElement('div');
+          card.className = 'bidding-card';
+          card.innerHTML = `
+            ${isToday ? '<div class="bidding-new-badge">最新发布</div>' : ''}
+            <div class="bidding-company">
+              <i class="fas fa-building"></i>
+              ${parsed.中标人 || '未知单位'}
+            </div>
+            
+            <div class="bidding-project">
+              <i class="fas fa-file-contract"></i> ${parsed['标段(包)名称'] || '未知项目'}
+            </div>
+            
+            <div class="bidding-info">
+              <div class="bidding-price">
+                <i class="fas fa-money-bill-wave"></i> ¥${formatAmountChinese(parsed['中标价(元)'])}
+              </div>
+              <div class="bidding-date">
+                <i class="fas fa-calendar-day"></i> ${formattedDate}
+              </div>
+            </div>
+            
+            <a href="${detailUrl}" target="_blank" class="bidding-details">
+              <i class="fas fa-external-link-alt"></i> 查看项目详情
+            </a>
+          `;
+          biddingCards.appendChild(card);
+        });
+
+        // 检查是否还有更多数据
+        if (biddingData.length > end) {
+          loadMoreBtn.disabled = false;
+          loadMoreBtn.innerHTML = '<i class="fas fa-plus-circle"></i> 加载更多中标信息';
+        } else {
+          loadMoreBtn.disabled = true;
+          loadMoreBtn.innerHTML = '<i class="fas fa-check"></i> 没有更多数据';
+        }
+      }
+
+      // 加载并渲染中标信息
+      async function loadBiddingData() {
+        biddingPage = 1;
+        biddingLoading.style.display = 'flex';
+        biddingCards.innerHTML = '';
+        biddingCards.appendChild(biddingLoading);
+        loadMoreContainer.style.display = 'none';
+        
+        // 添加旋转动画
+        refreshBiddingBtn.classList.add('refreshing');
+
+        try {
+          // 使用代理加速国内访问
+          const response = await fetch('https://gh-proxy.com/raw.githubusercontent.com/coomaso/zhongbiao/refs/heads/main/parsed.json');
+          biddingData = await response.json();
+          biddingData.sort((a, b) => new Date(b.raw_data.infodate) - new Date(a.raw_data.infodate));
+          renderBiddingPage();
+          loadMoreContainer.style.display = 'block';
+        } catch (e) {
+          console.error("加载中标信息失败：", e);
+          biddingCards.innerHTML = '<div class="no-data"><i class="fas fa-exclamation-triangle"></i><p>加载中标信息失败</p></div>';
+        } finally {
+          biddingLoading.style.display = 'none';
+          refreshBiddingBtn.classList.remove('refreshing');
+        }
+      }
+      
+      // 加载信誉分明细数据
+      async function loadCreditData(companyName) {
+        goodBehaviorList.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">加载信誉分明细...</div></div>';
+        badBehaviorList.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">加载信誉分明细...</div></div>';
+        
+        // 添加旋转动画
+        refreshCreditBtn.classList.add('refreshing');
+
+        try {
+          // 从当前图表数据中查找企业
+          if (!currentChartData || currentChartData.length === 0) {
+            throw new Error("当前无图表数据");
+          }
+
+          // 获取最新一天的数据
+          const latestDay = currentChartData[currentChartData.length - 1];
+          const companyData = latestDay.DATAlist.find(item => item.企业名称 === companyName);
+          if (!companyData || !companyData.信誉分明细) {
+            throw new Error("未找到该企业的信誉分明细");
+          }
+
+          const creditDetail = companyData.信誉分明细;
+          
+          // 更新计数
+          const goodItems = creditDetail.lhxwArray || [];
+          const badItems = creditDetail.blxwArray || [];
+          goodCount.textContent = goodItems.length;
+          badCount.textContent = badItems.length;
+          
+          // 渲染良好行为 - 按生效日期倒序排列
+          renderCreditList('lhxw', goodItems, goodBehaviorList);
+          
+          // 渲染不良行为 - 按生效日期倒序排列
+          renderCreditList('blxw', badItems, badBehaviorList);
+          
+        } catch (e) {
+          console.error("加载信誉分明细失败：", e);
+          goodBehaviorList.innerHTML = '<div class="no-credit-data"><i class="fas fa-exclamation-circle"></i><p>加载信誉分明细失败</p></div>';
+          badBehaviorList.innerHTML = '<div class="no-credit-data"><i class="fas fa-exclamation-circle"></i><p>加载信誉分明细失败</p></div>';
+        } finally {
+          refreshCreditBtn.classList.remove('refreshing');
+        }
+      }
+      
+      // 渲染信誉分列表 - 按生效日期倒序排列
+      function renderCreditList(type, items, container) {
+        if (!items || items.length === 0) {
+          container.innerHTML = '<div class="no-credit-data"><i class="fas fa-database"></i><p>暂无相关数据</p></div>';
+          return;
+        }
+        
+        // 按生效日期倒序排序
+        items.sort((a, b) => {
+          const dateA = new Date(a.beginDate);
+          const dateB = new Date(b.beginDate);
+          return dateB - dateA; // 最新的在前
+        });
+        
+        let html = '';
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // 设置时间为0点，以便只比较日期
+        
+        items.forEach(item => {
+          // 日期检查
+          const beginDate = new Date(item.beginDate);
+          beginDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(item.endDate);
+          endDate.setHours(0, 0, 0, 0);
+          
+          // 计算生效日期与今天相差的天数（只考虑天数差，不考虑时间）
+          const beginDiff = Math.floor((beginDate - today) / (1000 * 60 * 60 * 24));
+          // 计算有效期至与今天相差的天数
+          const endDiff = Math.floor((endDate - today) / (1000 * 60 * 60 * 24));
+          
+          // 角标逻辑
+          let badge = '';
+          
+          // 如果生效日期+3天小于等于今天（即生效日期在最近3天内）
+          if (beginDiff >= -3 && beginDiff <= 0) {
+            badge = '<div class="credit-item-badge new-badge">新增</div>';
+          } 
+          // 如果有效期至-3天小于等于今天（即距离过期还有3天或已过期）
+          else if (endDiff <= 3) {
+            badge = '<div class="credit-item-badge expired-badge">预警</div>';
+          }
+          
+          html += `
+            <div class="credit-item">
+              ${badge}
+              <div class="credit-item-header">
+                <div class="credit-item-title">${item.engName || item.reason}</div>
+              </div>
+              <div class="credit-item-info">
+                <div class="credit-item-label">行为类型：</div>
+                <div class="credit-item-value">${item.bzXwlb || '-'}</div>
+                
+                <div class="credit-item-label">${type === 'lhxw' ? '加分原因' : '扣分原因'}：</div>
+                <div class="credit-item-value">${item.reason || '-'}</div>
+                
+                <div class="credit-item-label">${type === 'lhxw' ? '加分值' : '扣分值'}：</div>
+                <div class="credit-item-value">${item.realValue || '0'}分</div>
+                
+                <div class="credit-item-label">资质：</div>
+                <div class="credit-item-value">${item.jfqyzz || item.kfqyzz || '-'}</div>
+              </div>
+              <div class="credit-item-footer">
+                <div>生效日期：${item.beginDate}</div>
+                <div>有效期至：${item.endDate}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+      }
+      
+      // 图表全屏功能
+      function toggleChartExpand() {
+        if (isChartExpanded) {
+          // 退出全屏
+          chartContainer.classList.remove('expanded');
+          dashboard.classList.remove('expanded');
+          expandedOverlay.classList.remove('visible');
+          closeExpandBtn.style.display = 'none';
+          expandChartBtn.innerHTML = '<i class="fas fa-expand"></i> 全屏';
+          isChartExpanded = false;
+        } else {
+          // 进入全屏
+          chartContainer.classList.add('expanded');
+          dashboard.classList.add('expanded');
+          expandedOverlay.classList.add('visible');
+          closeExpandBtn.style.display = 'flex';
+          expandChartBtn.innerHTML = '<i class="fas fa-compress"></i> 退出';
+          isChartExpanded = true;
+        }
+        
+        // 重新渲染图表以适应新尺寸
+        setTimeout(() => {
+          myChart.resize();
+        }, 300);
+      }
+      
+      // 回到顶部功能
+      function setupBackToTop() {
+        window.addEventListener('scroll', function() {
+          if (window.pageYOffset > 300) {
+            backToTop.classList.add('visible');
+          } else {
+            backToTop.classList.remove('visible');
+          }
+        });
+        
+        backToTop.addEventListener('click', function() {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        });
+      }
+      
+      // 初始化应用
+      function initApp() {
+        // 设置回到顶部按钮
+        setupBackToTop();
+        
+        // 添加Tab切换事件
+        document.querySelectorAll('.tab-button').forEach(tab => {
+          tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const jsonFile = this.dataset.file;
+            const category = this.textContent.trim();
+            loadAndRenderChart(jsonFile, category);
+          });
+        });
+        
+        // 添加刷新按钮事件
+        refreshStatsBtn.addEventListener('click', function() {
+          refreshStatsBtn.classList.add('refreshing');
+          const activeBtn = document.querySelector('.tab-button.active');
+          if (activeBtn) {
+            const jsonFile = activeBtn.dataset.file;
+            const category = activeBtn.textContent.trim();
+            loadAndRenderChart(jsonFile, category);
+          }
+          setTimeout(() => {
+            refreshStatsBtn.classList.remove('refreshing');
+          }, 1000);
+        });
+        
+        refreshBiddingBtn.addEventListener('click', function() {
+          loadBiddingData();
+        });
+        
+        refreshCreditBtn.addEventListener('click', function() {
+          const companyName = document.getElementById('companyName').textContent;
+          if (companyName) {
+            loadCreditData(companyName);
+          }
+        });
+        
+        // 添加加载更多按钮事件
+        loadMoreBtn.addEventListener('click', function() {
+          biddingPage++;
+          renderBiddingPage();
+        });
+        
+        // 添加搜索功能
+        searchInput.addEventListener('input', function() {
+          filterCompanies(this.value);
+        });
+        
+        // 添加全屏按钮事件监听器
+        expandChartBtn.addEventListener('click', toggleChartExpand);
+        closeExpandBtn.addEventListener('click', toggleChartExpand);
+        expandedOverlay.addEventListener('click', toggleChartExpand);
+        
+        // 添加信誉分标签页切换
+        creditTabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            creditTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const type = this.dataset.type;
+            creditContents.forEach(content => {
+              content.classList.remove('active');
+              if (content.id === `${type}Content`) {
+                content.classList.add('active');
+              }
+            });
+          });
+        });
+        
+        // 初始化加载数据
+        const activeBtn = document.querySelector('.tab-button.active');
+        if (activeBtn) {
+          const jsonFile = activeBtn.dataset.file;
+          const category = activeBtn.textContent.trim();
+          loadAndRenderChart(jsonFile, category);
+        }
+        loadBiddingData();
+      }
+      
+      // 启动应用
+      initApp();
+    }
+    
+    // 图表响应式
+    window.addEventListener('resize', () => {
+      if (typeof myChart !== 'undefined' && myChart) {
+        myChart.resize();
+      }
+    });
+  </script>
+</body>
+</html>
