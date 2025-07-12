@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>宜昌市企业信用与中标信息平台</title>
-    <!-- 预加载 echarts 脚本，as="script" 声明资源类型 -->
   <link rel="preload" href="https://cdn.bootcdn.net/ajax/libs/echarts/5.6.0/echarts.min.js" as="script">
   <link rel="preload" href="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.9.1/chart.min.js" as="script">
   <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,13 +13,14 @@
       padding: 0;
       box-sizing: border-box;
       font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
     
     body {
       background: linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%);
       color: #333;
       line-height: 1.6;
-      padding: 15px;
+      padding: 10px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -32,7 +32,7 @@
       margin: 0 auto;
       background: white;
       border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
       overflow: hidden;
       flex: 1;
       display: flex;
@@ -43,7 +43,7 @@
     header {
       background: linear-gradient(90deg, #1a56db 0%, #0e4cb8 100%);
       color: white;
-      padding: 22px 25px;
+      padding: 18px 20px;
       border-radius: 18px 18px 0 0;
       position: relative;
       overflow: hidden;
@@ -58,12 +58,12 @@
     }
     
     h1 {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       margin-bottom: 6px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       position: relative;
       z-index: 2;
       text-align: center;
@@ -71,57 +71,51 @@
     }
     
     .subtitle {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       opacity: 0.92;
       font-weight: 300;
       max-width: 1400px;
       position: relative;
       z-index: 2;
       text-align: center;
+      padding: 0 10px;
     }
     
     .dashboard {
       display: grid;
-      grid-template-columns: 1fr 380px;
-      grid-template-rows: auto 1fr auto;
-      grid-template-areas:
-        "chart right"
-        "credit right"
-        "bidding bidding";
-      gap: 20px;
-      padding: 20px;
-      flex: 1;
-      transition: all 0.3s ease;
-    }
-    
-    .dashboard.expanded {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
       grid-template-areas:
         "chart"
         "credit"
         "right"
         "bidding";
+      gap: 15px;
+      padding: 15px;
+      flex: 1;
+      transition: all 0.3s ease;
     }
     
     .chart-container {
       grid-area: chart;
       background: white;
       border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-      padding: 20px;
-      height: 500px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 15px;
+      height: 400px;
       display: flex;
       flex-direction: column;
       position: relative;
       transition: all 0.3s ease;
-      min-width: 640px; /* 设置图表最小宽度 */
+      min-width: 0;
     }
     
     .chart-container.expanded {
       position: fixed;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      bottom: 20px;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
       z-index: 1000;
       height: auto;
       min-width: unset;
@@ -133,20 +127,20 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      margin-bottom: 20px;
-      gap: 15px;
+      margin-bottom: 15px;
+      gap: 12px;
     }
     
     .tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       justify-content: center;
       width: 100%;
     }
     
     .tab-button {
-      padding: 8px 16px;
+      padding: 8px 14px;
       border: none;
       background: #eef5ff;
       color: #2c5282;
@@ -156,14 +150,15 @@
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
+      gap: 6px;
+      font-size: 13px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       flex: 1;
-      min-width: 120px;
-      max-width: 200px;
+      min-width: 100px;
+      max-width: 120px;
       justify-content: center;
       text-align: center;
+      touch-action: manipulation;
     }
     
     .tab-button:hover {
@@ -177,7 +172,7 @@
     }
     
     .tab-button i {
-      font-size: 16px;
+      font-size: 14px;
     }
     
     .filter-controls {
@@ -190,24 +185,24 @@
     
     .filter-row {
       display: flex;
+      flex-direction: column;
       width: 100%;
-      max-width: 800px;
-      gap: 15px;
+      gap: 10px;
       align-items: center;
       justify-content: center;
     }
     
     .search-container {
       position: relative;
-      flex: 1;
-      max-width: 400px;
+      width: 100%;
+      max-width: 100%;
     }
     
     .search-input {
-      padding: 10px 15px 10px 40px;
+      padding: 12px 15px 12px 42px;
       border: 1px solid #dbeafe;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 15px;
       background: #f8fafc;
       width: 100%;
       box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
@@ -226,26 +221,28 @@
       top: 50%;
       transform: translateY(-50%);
       color: #94a3b8;
+      font-size: 16px;
     }
     
     .date-range {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 8px 15px;
+      padding: 10px 15px;
       font-size: 14px;
       color: #475569;
       display: flex;
       align-items: center;
       gap: 8px;
-      flex: 0 0 auto;
+      width: 100%;
+      justify-content: center;
     }
     
     .expand-btn {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 8px 15px;
+      padding: 10px 15px;
       font-size: 14px;
       color: #475569;
       display: flex;
@@ -253,6 +250,9 @@
       gap: 8px;
       cursor: pointer;
       transition: all 0.3s;
+      width: 100%;
+      justify-content: center;
+      touch-action: manipulation;
     }
     
     .expand-btn:hover {
@@ -264,7 +264,7 @@
     .chart-wrapper {
       flex: 1;
       position: relative;
-      width: 100%; /* 确保图表容器宽度自适应 */
+      width: 100%;
     }
     
     #main {
@@ -277,8 +277,8 @@
       grid-area: right;
       background: white;
       border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 15px;
       display: flex;
       flex-direction: column;
       transition: all 0.3s ease;
@@ -288,21 +288,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
       border-bottom: 1px solid #edf2f7;
     }
     
-    .panel-title, .credit-section-title {
-      font-size: 1.2rem;
+    .panel-title {
+      font-size: 1.15rem;
       font-weight: 700;
       color: #1e293b;
     }
-    @media (max-width: 768px) {
-      .panel-title, .credit-section-title {
-        font-size: 1.1rem;
-      }
-    }
+    
     .refresh-btn {
       background: #dbeafe;
       color: #1d4ed8;
@@ -316,6 +312,7 @@
       cursor: pointer;
       transition: all 0.3s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      touch-action: manipulation;
     }
     
     .refresh-btn:hover {
@@ -334,14 +331,14 @@
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-bottom: 25px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
     
     .stat-card {
       background: #f8fafc;
       border-radius: 10px;
-      padding: 15px;
+      padding: 12px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.02);
       border: 1px solid #e2e8f0;
       transition: all 0.3s;
@@ -355,23 +352,23 @@
     }
     
     .stat-title {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #64748b;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
     
     .stat-value {
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: #1e293b;
       margin: 3px 0;
     }
     
     .stat-change {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       margin-top: 3px;
       display: flex;
       align-items: center;
@@ -390,37 +387,13 @@
       flex: 1;
       overflow-y: auto;
       margin-top: 8px;
-      max-height: 680px;
-      /* 隐藏滚动条 */
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE 10+ */
+      max-height: 300px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
     
     .top-list::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
-    }
-    
-    /* 在悬停时显示滚动条（仅适用于桌面） */
-    @media (min-width: 769px) {
-      .top-list:hover {
-        scrollbar-width: thin; /* Firefox */
-        scrollbar-color: #cbd5e1 #f1f5f9; /* Firefox */
-      }
-      .top-list:hover::-webkit-scrollbar {
-        display: block; /* Chrome, Safari, Opera */
-        width: 6px;
-      }
-      .top-list:hover::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
-      }
-      .top-list:hover::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-      }
-      .top-list:hover::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-      }
+      display: none;
     }
     
     .list-header {
@@ -434,6 +407,7 @@
       top: 0;
       background: white;
       z-index: 2;
+      font-size: 0.95rem;
     }
     
     .list-item {
@@ -452,14 +426,14 @@
     .company-info {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       flex: 1;
-      min-width: 0; /* 防止内容溢出 */
+      min-width: 0;
     }
     
     .rank {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 6px;
       background: #dbeafe;
       color: #1d4ed8;
@@ -467,7 +441,7 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       flex-shrink: 0;
     }
     
@@ -499,20 +473,20 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       flex: 1;
-      min-width: 0; /* 防止内容溢出 */
+      min-width: 0;
     }
     
     .company-score {
       font-weight: 700;
       color: #1e293b;
-      font-size: 1rem;
+      font-size: 0.95rem;
       flex-shrink: 0;
-      margin-left: 10px;
+      margin-left: 8px;
     }
     
     .trend-indicator {
-      font-size: 12px;
-      margin-left: 5px;
+      font-size: 11px;
+      margin-left: 4px;
       flex-shrink: 0;
     }
     
@@ -526,9 +500,9 @@
     
     .footer {
       text-align: center;
-      padding: 20px;
+      padding: 15px;
       color: #64748b;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       border-top: 1px solid #e2e8f0;
       background: #f8fafc;
     }
@@ -544,23 +518,23 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      gap: 15px;
+      gap: 12px;
       z-index: 10;
       border-radius: 14px;
       backdrop-filter: blur(2px);
     }
     
     .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #e2e8f0;
-      border-top: 5px solid #3b82f6;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #3b82f6;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
     
     .loading-text {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #475569;
       font-weight: 600;
     }
@@ -572,7 +546,7 @@
       transform: translate(-50%, -50%);
       text-align: center;
       color: #94a3b8;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
     
     /* 中标信息展示区 */
@@ -580,24 +554,24 @@
       grid-area: bidding;
       background: white;
       border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 15px;
     }
     
     .bidding-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     
     .bidding-title {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: #1e293b;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     
     .bidding-title i {
@@ -606,20 +580,20 @@
     
     .bidding-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
     }
     
     .bidding-card {
       background: #f8fafc;
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px;
       border: 1px solid #e2e8f0;
       box-shadow: 0 4px 8px rgba(0,0,0,0.03);
       transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       position: relative;
     }
     
@@ -640,7 +614,7 @@
     
     .bidding-company {
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: #1e293b;
       display: flex;
       align-items: center;
@@ -650,28 +624,27 @@
     .bidding-project {
       font-weight: 600;
       color: #1e40af;
-      font-size: 1rem;
+      font-size: 0.95rem;
       line-height: 1.4;
     }
     
     .bidding-info {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       margin-top: 10px;
-      gap: 10px;
+      gap: 8px;
     }
     
     .bidding-price {
       background: #dbeafe;
       color: #1d4ed8;
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 6px;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       display: flex;
       align-items: center;
       gap: 5px;
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -679,25 +652,24 @@
     .bidding-date {
       background: #f0fdf4;
       color: #10b981;
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 6px;
       font-weight: 600;
       font-size: 0.85rem;
       display: flex;
       align-items: center;
       gap: 5px;
-      white-space: nowrap;
     }
     
     .bidding-new-badge {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 12px;
+      right: 12px;
       background: #ef4444;
       color: white;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 2px 6px;
       border-radius: 20px;
       animation: pulse 1.5s infinite;
     }
@@ -711,19 +683,20 @@
     .bidding-details {
       background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
       color: white;
-      padding: 8px 15px;
+      padding: 8px 12px;
       border-radius: 8px;
       text-align: center;
       font-weight: 600;
-      font-size: 0.9rem;
-      margin-top: 15px;
+      font-size: 0.85rem;
+      margin-top: 12px;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       text-decoration: none;
+      touch-action: manipulation;
     }
     
     .bidding-details:hover {
@@ -733,16 +706,16 @@
     }
     
     .trend-chart-container {
-      height: 60px;
-      margin-top: 10px;
+      height: 50px;
+      margin-top: 8px;
       position: relative;
     }
     
     .trend-chart-label {
       position: absolute;
-      top: 5px;
-      left: 5px;
-      font-size: 10px;
+      top: 4px;
+      left: 4px;
+      font-size: 9px;
       color: #64748b;
       z-index: 2;
     }
@@ -750,11 +723,11 @@
     .load-more-btn {
       background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
       color: white;
-      padding: 10px 15px;
+      padding: 12px 15px;
       border-radius: 8px;
       text-align: center;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 15px;
       margin-top: 15px;
       cursor: pointer;
       transition: all 0.2s;
@@ -783,10 +756,10 @@
     /* 回到顶部按钮 */
     .back-to-top {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
-      width: 50px;
-      height: 50px;
+      bottom: 20px;
+      right: 20px;
+      width: 45px;
+      height: 45px;
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
       color: white;
       border-radius: 50%;
@@ -799,6 +772,7 @@
       z-index: 1000;
       opacity: 0;
       transform: translateY(20px);
+      touch-action: manipulation;
     }
     
     .back-to-top.visible {
@@ -813,175 +787,507 @@
     }
     
     .back-to-top i {
-      font-size: 20px;
+      font-size: 18px;
     }
     
-    /* 移动设备优化 */
-    @media (max-width: 1100px) {
-      .dashboard {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto;
-        grid-template-areas:
-          "chart"
-          "right"
-          "credit"
-          "bidding";
-      }
-      
-      .stats-panel {
-        max-width: 100%;
-      }
+    /* 信誉分明细卡片 */
+    .credit-detail-section {
+      grid-area: credit;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      width: 100%;
+      overflow-x: hidden;
     }
     
-    @media (max-width: 768px) {
+    .credit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    
+    .credit-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: calc(100% - 50px);
+      overflow: hidden;
+    }
+    
+    .credit-title i {
+      color: #3b82f6;
+    }
+    
+    .credit-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .credit-tab {
+      padding: 8px 15px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      color: #64748b;
+      flex: 1;
+      min-width: 110px;
+      text-align: center;
+      font-size: 0.9rem;
+      touch-action: manipulation;
+    }
+    
+    .credit-tab.active {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .credit-tab:hover:not(.active) {
+      background: #dbeafe;
+    }
+    
+    .credit-content {
+      display: none;
+    }
+    
+    .credit-content.active {
+      display: block;
+    }
+    
+    .credit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 8px;
+      flex: 1;
+    }
+    
+    .credit-item {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      position: relative;
+      transition: all 0.3s;
+      word-break: break-word;
+    }
+    
+    .credit-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    .credit-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .credit-item-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #1e40af;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    
+    .credit-item-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    
+    .new-badge {
+      background: #10b981;
+      color: white;
+    }
+    
+    .expired-badge {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .credit-item-info {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    
+    .credit-item-label {
+      font-weight: 600;
+      color: #4b5563;
+    }
+    
+    .credit-item-value {
+      color: #1f2937;
+      word-break: break-word;
+      margin-bottom: 5px;
+    }
+    
+    .credit-item-footer {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      color: #6b7280;
+      font-size: 0.8rem;
+      gap: 4px;
+    }
+    
+    .no-credit-data {
+      text-align: center;
+      padding: 25px;
+      color: #94a3b8;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    
+    .no-credit-data i {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      color: #cbd5e1;
+    }
+    
+    /* 预加载动画 */
+    .preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a56db;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+    
+    .preloader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    
+    .preloader-logo {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 15px;
+      background: white;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .preloader-logo i {
+      font-size: 50px;
+      color: #1a56db;
+    }
+    
+    .preloader-text {
+      color: white;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+    
+    .count-badge {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      border-radius: 8px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      margin-left: 4px;
+    }
+    
+    /* 图表容器宽度优化 */
+    #main {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    
+    /* 确保图表容器完全响应式 */
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* 移动端优化 */
+    @media (min-width: 768px) {
       body {
-        padding: 10px;
+        padding: 15px;
       }
       
       .container {
-        border-radius: 14px;
+        border-radius: 18px;
       }
       
       header {
-        padding: 18px 15px;
-        border-radius: 14px 14px 0 0;
+        padding: 22px 25px;
       }
       
       h1 {
-        white-space: nowrap;
-        overflow-x: auto;
-        text-overflow: ellipsis;
+        font-size: 1.5rem;
+        gap: 12px;
       }
-    }
       
       .subtitle {
-        font-size: 0.85rem;
+        font-size: 0.95rem;
       }
       
       .dashboard {
-        padding: 15px;
-        gap: 15px;
+        grid-template-columns: 1fr 380px;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+          "chart right"
+          "credit right"
+          "bidding bidding";
+        gap: 20px;
+        padding: 20px;
       }
       
       .chart-container {
-        height: 520px;
-        padding: 15px;
-        min-width: 100%; /* 移动设备上不需要固定最小宽度 */
+        height: 500px;
+        padding: 20px;
       }
       
       .tab-button {
-        padding: 8px 12px;
-        font-size: 13px;
-        min-width: 100px;
+        padding: 8px 16px;
+        font-size: 14px;
+        min-width: 120px;
+        max-width: 200px;
+      }
+      
+      .filter-row {
+        flex-direction: row;
+        gap: 15px;
+      }
+      
+      .search-container {
+        max-width: 400px;
       }
       
       .date-range {
-        font-size: 13px;
-        padding: 7px 12px;
+        width: auto;
+        padding: 8px 15px;
+      }
+      
+      .expand-btn {
+        width: auto;
+        padding: 8px 15px;
       }
       
       .stats-panel {
-        padding: 15px;
+        padding: 20px;
       }
       
       .panel-title {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
       }
       
       .stat-card {
-        padding: 12px;
+        padding: 15px;
       }
       
       .stat-title {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
       }
       
       .stat-value {
-        font-size: 1.4rem;
+        font-size: 1.6rem;
       }
       
       .stat-change {
-        font-size: 0.8rem;
-      }
-      
-      .company-name {
-        max-width: 120px;
-        font-size: 13px;
-      }
-      
-      .footer {
-        padding: 15px;
         font-size: 0.85rem;
       }
       
-      .bidding-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .bidding-title {
-        font-size: 1.15rem;
+      .top-list {
+        max-height: 680px;
       }
       
       .bidding-section {
-        margin: 0;
+        padding: 20px;
       }
       
-      .back-to-top {
-        bottom: 20px;
-        right: 20px;
-        width: 45px;
-        height: 45px;
+      .bidding-title {
+        font-size: 1.3rem;
+      }
+      
+      .bidding-info {
+        flex-direction: row;
+        gap: 10px;
+      }
+      
+      .credit-detail-section {
+        padding: 20px;
+        max-width: 690px;
+      }
+      
+      .credit-title {
+        font-size: 1.3rem;
+      }
+      
+      .credit-tab {
+        padding: 10px 20px;
+        min-width: 120px;
+      }
+      
+      .credit-item-info {
+        grid-template-columns: auto 1fr;
+        gap: 10px 15px;
+      }
+      
+      .credit-item-label {
+        min-width: 80px;
+      }
+      
+      .credit-item-footer {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      
+      .footer {
+        padding: 20px;
+        font-size: 0.9rem;
       }
     }
     
-    @media (max-width: 600px) {
-      .filter-row {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: space-between;
-      }
-      .search-container,
-      .date-range,
-      .expand-btn {
-        flex: 1 1 0;
-        min-width: 0;
-        max-width: 33%;
+    @media (min-width: 1024px) {
+      .dashboard {
+        grid-template-columns: 1fr 380px;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+          "chart right"
+          "credit right"
+          "bidding bidding";
       }
     }
     
     @media (max-width: 480px) {
+      h1 {
+        font-size: 1rem !important;
+      }
+      
+      .filter-row {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 4px;
+      }
+      .search-container {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .expand-btn {
+        flex: none;
+        min-width: 40px;
+        max-width: 80px;
+        font-size: 14px;
+        padding: 6px 8px;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+        white-space: normal;
+        word-break: break-all;
+        text-align: center;
+        padding: 0 4px;
+      }
+      
+      .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+      }
+      .filter-row-top {
+        display: flex;
+        flex-direction: row;
+        gap: 4px;
+        width: 100%;
+      }
+      .search-container, .expand-btn {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .expand-btn {
+        flex: none;
+        min-width: 40px;
+        max-width: 80px;
+      }
+      .date-range {
+        width: 100%;
+        margin-top: 4px;
+      }
       .chart-container {
-        height: 550px;
+        height: 600px;
+        width: 100% !important;
+        padding: 8px !important;
       }
       
       .tabs {
-        gap: 6px;
+        gap: 4px;
       }
       
       .tab-button {
-        padding: 7px 10px;
+        padding: 8px 10px;
         font-size: 12px;
         min-width: 90px;
       }
       
       .stats-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
+      }
+      
+      .bidding-grid {
+        grid-template-columns: 1fr;
       }
       
       .company-name {
         max-width: 100px;
       }
       
-      .bidding-info {
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .bidding-price, .bidding-date {
-        width: 100%;
-        justify-content: center;
+      .chart-container.expanded {
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        max-width: calc(100vw - 12px);
+        max-height: calc(100vh - 12px);
+        padding: 4px !important;
       }
     }
     
@@ -1013,12 +1319,12 @@
     
     .close-expand {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 10px;
+      right: 10px;
       background: #ef4444;
       color: white;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -1027,276 +1333,33 @@
       z-index: 1001;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       display: none;
+      touch-action: manipulation;
     }
     
-    /* 信誉分明细卡片 */
-    .credit-detail-section {
-      grid-area: credit;
-      background: white;
-      border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      min-height: 300px;
-      max-width: 690px; /* 添加最大宽度限制 */
-      width: 100%; /* 确保宽度自适应 */
-      overflow-x: hidden; /* 防止水平溢出 */
-    }
-    
-    .credit-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #edf2f7;
-    }
-    
-    .credit-title {
-      font-size: 1.3rem;
-      font-weight: 573;
-      color: #1e293b;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      max-width: calc(100% - 50px); /* 防止公司名过长 */
-      overflow: hidden;
-    }
-    
-    .credit-title i {
-      color: #3b82f6;
-    }
-    
-    .credit-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    
-    .credit-tab {
-      padding: 10px 20px;
-      background: #f1f5f9;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-weight: 600;
-      color: #64748b;
-      flex: 1;
-      min-width: 120px;
-      text-align: center;
-    }
-    
-    .credit-tab.active {
-      background: #3b82f6;
-      color: white;
-    }
-    
-    .credit-tab:hover:not(.active) {
-      background: #dbeafe;
-    }
-    
-    .credit-content {
+    /* 移动端菜单按钮 */
+    .mobile-menu-btn {
       display: none;
-    }
-    
-    .credit-content.active {
-      display: block;
-    }
-    
-    .credit-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      max-height: 450px;
-      overflow-y: auto;
-      padding-right: 10px;
-      flex: 1;
-    }
-    
-    .credit-item {
-      background: #f8fafc;
-      border-radius: 10px;
-      padding: 15px;
-      border: 1px solid #e2e8f0;
-      position: relative;
-      transition: all 0.3s;
-      word-break: break-word; /* 确保长文本自动换行 */
-    }
-    
-    .credit-item:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    
-    .credit-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    
-    .credit-item-title {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #1e40af;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%; /* 确保标题不会溢出 */
-    }
-    
-    .credit-item-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-    
-    .new-badge {
-      background: #10b981;
-      color: white;
-    }
-    
-    .expired-badge {
-      background: #ef4444;
-      color: white;
-    }
-    
-    .credit-item-info {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 10px 15px;
-      font-size: 0.9rem;
-    }
-    
-    .credit-item-label {
-      font-weight: 600;
-      color: #4b5563;
-      min-width: 80px;
-    }
-    
-    .credit-item-value {
-      color: #1f2937;
-      word-break: break-word; /* 确保长文本自动换行 */
-    }
-    
-    .credit-item-footer {
-      margin-top: 15px;
-      padding-top: 10px;
-      border-top: 1px dashed #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      color: #6b7280;
-      font-size: 0.85rem;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    
-    .no-credit-data {
-      text-align: center;
-      padding: 30px;
-      color: #94a3b8;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .no-credit-data i {
-      font-size: 3rem;
-      margin-bottom: 15px;
-      color: #cbd5e1;
-    }
-    
-    /* 预加载动画 */
-    .preloader {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #1a56db;
-      display: flex;
-      flex-direction: column;
+      bottom: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border-radius: 50%;
+      z-index: 1000;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.5s, visibility 0.5s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      cursor: pointer;
+      touch-action: manipulation;
     }
     
-    .preloader.hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-    
-    .preloader-logo {
-      width: 120px;
-      height: 120px;
-      margin-bottom: 20px;
-      background: white;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-    
-    .preloader-logo i {
-      font-size: 60px;
-      color: #1a56db;
-    }
-    
-    .preloader-text {
-      color: white;
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-top: 20px;
-    }
-    
-    .count-badge {
-      display: inline-block;
-      background: #3b82f6;
-      color: white;
-      border-radius: 10px;
-      padding: 2px 8px;
-      font-size: 0.8rem;
-      margin-left: 5px;
-    }
-    /* 图表容器宽度优化 */
-    #main {
-      width: 100% !important;
-      height: 100% !important;
-    }
-    
-    /* 确保图表容器完全响应式 */
-    .chart-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* 在移动端调整图表高度 */
-    @media (max-width: 768px) {
-      .chart-container {
-        height: 70vh;
-        min-height: 420px;
-        max-height: 900px;
+    @media (max-width: 767px) {
+      .mobile-menu-btn {
+        display: flex;
       }
     }
-    @media (max-width: 480px) {
-      .chart-container {
-        height: 75vh;
-        min-height: 380px;
-        max-height: 900px;
-      }
-    }
-
   </style>
 </head>
 <body>
@@ -1312,6 +1375,11 @@
   <!-- 回到顶部按钮 -->
   <div class="back-to-top" id="backToTop">
     <i class="fas fa-arrow-up"></i>
+  </div>
+  
+  <!-- 移动端菜单按钮 -->
+  <div class="mobile-menu-btn" id="mobileMenuBtn">
+    <i class="fas fa-bars"></i>
   </div>
   
   <!-- 全屏遮罩 -->
@@ -1357,14 +1425,12 @@
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" class="search-input" id="searchInput" placeholder="搜索企业名称...">
               </div>
-              
-              <div class="date-range">
-                <i class="fas fa-calendar-alt"></i> <span id="dataRange">数据范围: 2025年5月 - 2025年6月</span>
-              </div>
-              
               <button class="expand-btn" id="expandChart">
                 <i class="fas fa-expand"></i> 全屏
               </button>
+              <div class="date-range">
+                <i class="fas fa-calendar-alt"></i> <span id="dataRange">数据范围: 2025年5月 - 2025年6月</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1547,6 +1613,7 @@
       const refreshStatsBtn = document.getElementById('refreshStats');
       const refreshBiddingBtn = document.getElementById('refreshBidding');
       const refreshCreditBtn = document.getElementById('refreshCredit');
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
       
       // 存储当前图表数据
       let currentChartData = null;
@@ -1568,6 +1635,9 @@
       
       // 信誉分数据
       let creditData = null;
+      
+      // 移动端菜单状态
+      let isMenuOpen = false;
       
       // 格式化日期
       function formatDate(dateStr) {
@@ -2429,10 +2499,26 @@
         });
       }
       
+      // 移动端菜单功能
+      function setupMobileMenu() {
+        mobileMenuBtn.addEventListener('click', function() {
+          if (isMenuOpen) {
+            dashboard.style.display = 'grid';
+            isMenuOpen = false;
+          } else {
+            dashboard.style.display = 'none';
+            isMenuOpen = true;
+          }
+        });
+      }
+      
       // 初始化应用
       function initApp() {
         // 设置回到顶部按钮
         setupBackToTop();
+        
+        // 设置移动端菜单
+        setupMobileMenu();
         
         // 添加Tab切换事件
         document.querySelectorAll('.tab-button').forEach(tab => {
