@@ -150,47 +150,50 @@ def process_page(session: requests.Session, page: int, code: str, timestamp: str
 
     raise RuntimeError("超过最大重试次数")
 
-def fetch_company_detail(session: requests.Session, cec_id: str, company_name: str) -> dict:
-    """获取企业信誉分明细"""
+def fetch_company_detail(session: requests.Session, cec_id: str, company_name: str, max_retries=3) -> dict:
+    """获取企业信誉分明细（增强版，带重试）"""
     print(f"\n获取企业信誉分明细: {company_name} (cecId={cec_id})")
     detail_url = f"http://106.15.60.27:22222/ycdc/bakCmisYcOrgan/getCurrentIntegrityDetails?cecId={cec_id}"
-    
-    try:
-        # 发送请求
-        response = safe_request(session, detail_url)
-        response_data = response.json()
-        
-        # 检查响应状态
-        if response_data.get("code") != 0:
-            print(f"信誉分明细接口异常: {response_data}")
-            return {}
-        
-        # 解密数据
-        encrypted_data = response_data.get("data", "")
-        if not encrypted_data:
-            print("信誉分明细接口返回空数据")
-            return {}
-            
-        decrypted_str = aes_decrypt_base64(encrypted_data)
-        detail_data = json.loads(decrypted_str)
-        
-        # 提取需要的数据结构
-        company_detail = {
-            "cioName": detail_data.get("data", {}).get("cioName", company_name),
-            "jfsj": detail_data.get("data", {}).get("jfsj", ""),
-            "eqtName": detail_data.get("data", {}).get("eqtName", ""),
-            "blxwArray": detail_data.get("data", {}).get("blxwArray", []),
-            "lhxwArray": detail_data.get("data", {}).get("lhxwArray", []),
-            "cecId": detail_data.get("data", {}).get("cecId", cec_id),
-            "cechId": detail_data.get("data", {}).get("cechId", "")
-        }
-        
-        print(f"成功获取企业信誉分明细: {company_detail.get('cioName')}")
-        return company_detail
-        
-    except Exception as e:
-        print(f"获取企业信誉分明细失败: {str(e)}")
-        return {}
+    last_error = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = safe_request(session, detail_url)
+            response_data = response.json()
+
+            if response_data.get("code") != 0:
+                print(f"信誉分明细接口异常: {response_data}")
+                last_error = f"接口异常: {response_data}"
+                continue
+
+            encrypted_data = response_data.get("data", "")
+            if not encrypted_data:
+                print("信誉分明细接口返回空数据")
+                last_error = "接口返回空数据"
+                continue
+
+            decrypted_str = aes_decrypt_base64(encrypted_data)
+            detail_data = json.loads(decrypted_str)
+
+            company_detail = {
+                "cioName": detail_data.get("data", {}).get("cioName", company_name),
+                "jfsj": detail_data.get("data", {}).get("jfsj", ""),
+                "eqtName": detail_data.get("data", {}).get("eqtName", ""),
+                "blxwArray": detail_data.get("data", {}).get("blxwArray", []),
+                "lhxwArray": detail_data.get("data", {}).get("lhxwArray", []),
+                "cecId": detail_data.get("data", {}).get("cecId", cec_id),
+                "cechId": detail_data.get("data", {}).get("cechId", "")
+            }
+            print(f"成功获取企业信誉分明细: {company_detail.get('cioName')}")
+            return company_detail
+
+        except Exception as e:
+            print(f"第{attempt}次获取企业信誉分明细失败: {str(e)}")
+            last_error = str(e)
+            time.sleep(random.uniform(1, 5))  # 延迟后重试
+
+    print(f"获取企业信誉分明细失败: {last_error}")
+    return {}
 
 def append_top_json(sorted_data, category_name, github_mode=False):
     """追加数据到当天的JSON文件"""
@@ -471,7 +474,7 @@ def export_to_excel(data, session, github_mode=False):
                 else:
                     # 获取企业信誉分明细
                     time.sleep(random.uniform(2, 5))
-                    detail = fetch_company_detail(session, cec_id, company_name)
+                    detail = fetch_company_detail(session, cec_id, company_name, max_retries=3) # 增强容错率
                     if detail:
                         item['detail'] = detail
                         detail_cache[cec_id] = detail
