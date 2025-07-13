@@ -195,11 +195,11 @@
     .search-container {
       position: relative;
       width: 100%;
-      max-width: 100%;
+      max-width: 230px;
     }
     
     .search-input {
-      padding: 12px 15px 12px 42px;
+      padding: 8px 15px 8px 42px;
       border: 1px solid #dbeafe;
       border-radius: 8px;
       font-size: 15px;
@@ -238,6 +238,7 @@
       justify-content: center;
     }
     
+
     .expand-btn {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -871,7 +872,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 300px;
+      max-height: 400px;
       overflow-y: auto;
       padding-right: 8px;
       flex: 1;
@@ -1095,10 +1096,6 @@
         gap: 15px;
       }
       
-      .search-container {
-        max-width: 400px;
-      }
-      
       .date-range {
         width: auto;
         padding: 8px 15px;
@@ -1201,24 +1198,6 @@
         font-size: 1rem !important;
       }
       
-      .filter-row {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        width: 100%;
-        gap: 4px;
-      }
-      .search-container {
-        flex: 1 1 0;
-        min-width: 0;
-        max-width: 100%;
-      }
-      .expand-btn {
-        flex: none;
-        min-width: 40px;
-        max-width: 80px;
-        font-size: 14px;
-        padding: 6px 8px;
-      }
       .subtitle {
         font-size: 0.8rem;
         white-space: normal;
@@ -1227,30 +1206,6 @@
         padding: 0 4px;
       }
       
-      .filter-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 4px;
-      }
-      .filter-row-top {
-        display: flex;
-        flex-direction: row;
-        gap: 4px;
-        width: 100%;
-      }
-      .search-container, .expand-btn {
-        flex: 1 1 0;
-        min-width: 0;
-      }
-      .expand-btn {
-        flex: none;
-        min-width: 40px;
-        max-width: 80px;
-      }
-      .date-range {
-        width: 100%;
-        margin-top: 4px;
-      }
       .chart-container {
         height: 600px;
         width: 100% !important;
@@ -1425,12 +1380,14 @@
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" class="search-input" id="searchInput" placeholder="搜索企业名称...">
               </div>
-              <button class="expand-btn" id="expandChart">
-                <i class="fas fa-expand"></i> 全屏
-              </button>
+              
               <div class="date-range">
                 <i class="fas fa-calendar-alt"></i> <span id="dataRange">数据范围: 2025年5月 - 2025年6月</span>
               </div>
+              
+              <button class="expand-btn" id="expandChart">
+                <i class="fas fa-expand"></i> 全屏
+              </button>
             </div>
           </div>
         </div>
@@ -2141,10 +2098,17 @@
             },
             axisLabel: {
               color: '#475569',
-              rotate: isMobile ? 45 : 30,
+              rotate: 0, // 垂直显示
               interval: isMobile ? 'auto' : 0,
               margin: isMobile ? 15 : 0,
-              fontSize: isMobile ? 11 : 12
+              fontSize: isMobile ? 10 : 10,
+              formatter: function (value) {
+                // 假设 timeLabels 形如 '2024-07-13'
+                // 仅显示月-日
+                return value.slice(5);
+                // 或 return value.split('-').slice(1).join('-');
+                // 如果只显示“日”，可以 return value.slice(-2);
+              }
             },
             data: timeLabels
           },
