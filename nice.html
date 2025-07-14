@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宜昌市企业信用数据筛分系统</title>
+    <!-- 使用国内CDN资源加速 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.cn/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --accent-color: #4a90e2;
+            --light-blue: #f0f7ff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --light-bg: #f8fafd;
+            --card-bg: #ffffff;
+            --text-dark: #333;
+            --text-medium: #666;
+            --text-light: #888;
+            --border-color: #e1e8f5;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --border-radius: 12px;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 70px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            max-width: 1800px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            flex-direction: column;
+        }
+        
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 100;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+        
+        .mobile-menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* 左侧文件列表样式 */
+        .file-sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px 15px;
+            overflow-y: auto;
+            box-shadow: 3px 0 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        
+        .file-sidebar.collapsed {
+            width: var(--sidebar-collapsed);
+        }
+        
+        .file-sidebar.collapsed .file-sidebar-header h2,
+        .file-sidebar.collapsed .repo-info,
+        .file-sidebar.collapsed .file-name,
+        .file-sidebar.collapsed .file-date,
+        .file-sidebar.collapsed .fa-chevron-right,
+        .file-sidebar.collapsed .folder .file-name {
+            display: none;
+        }
+        
+        .file-sidebar.collapsed .file-sidebar-header {
+            justify-content: center;
+        }
+        
+        .file-sidebar.collapsed .tree-item {
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .file-sidebar.collapsed .tree-item i {
+            margin-right: 0;
+            font-size: 1.2rem;
+        }
+        
+        /* 桌面端折叠按钮 */
+        .collapse-sidebar-btn {
+            position: absolute;
+            top: 30px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 11;
+        }
+        
+        .collapse-sidebar-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(180deg);
+        }
+        
+        /* 右侧内容区样式 */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: var(--light-bg);
+            margin-left: var(--sidebar-width);
+            transition: margin 0.3s ease;
+        }
+        
+        .file-sidebar.collapsed + .main-content {
+            margin-left: var(--sidebar-collapsed);
+        }
+        
+        .file-sidebar-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .file-sidebar-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #64b5f6, #4a90e2);
+            border-radius: 3px;
+        }
+        
+        .file-sidebar-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            color: #64b5f6;
+            background: rgba(255, 255, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+        
+        .file-sidebar-header h2 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+        
+        .repo-info {
+            font-size: 0.85rem;
+            color: #bbdefb;
+            margin-top: 5px;
+            padding: 0 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            line-height: 1.5;
+            transition: opacity 0.3s ease;
+        }
+        
+        .directory-tree {
+            margin-top: 20px;
+        }
+        
+        .tree-item {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+        }
+        
+        .tree-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .tree-item.active {
+            background: rgba(41, 98, 255, 0.3);
+            border-left: 3px solid #64b5f6;
+        }
+        
+        .tree-item i {
+            margin-right: 10px;
+            font-size: 0.9rem;
+            width: 20px;
+            text-align: center;
+            color: #90caf9;
+        }
+        
+        .tree-item .file-name {
+            flex: 1;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tree-item .file-date {
+            font-size: 0.75rem;
+            color: #90caf9;
+            margin-left: 10px;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tree-folder {
+            margin-left: 20px;
+            border-left: 1px dashed rgba(255, 255, 255, 0.2);
+            padding-left: 15px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .tree-folder.open {
+            display: block;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #90caf9;
+        }
+        
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            animation: spin 1s infinite linear;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 右侧内容区 */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(120deg, var(--light-bg) 0%, var(--card-bg) 100%);
+            border: 1px solid var(--border-color);
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 700px;
+            margin: 15px auto 0;
+            color: var(--text-medium);
+            background: rgba(240, 245, 255, 0.6);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: inline-block;
+            border: 1px solid var(--border-color);
+        }
+        
+        .filter-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .filter-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-light);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--light-bg) 100%);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-card:hover {
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .filter-header h2 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+        
+        .filter-header h2 i {
+            color: var(--secondary-color);
+            background: var(--light-blue);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        
+        .mode-switch {
+            display: flex;
+            background: var(--light-blue);
+            border-radius: 30px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .mode-btn {
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(120deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+        
+        .filter-group {
+            margin-bottom: 20px;
+        }
+        
+        .filter-group h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group h3 i {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            background: var(--light-blue);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: var(--light-bg);
+            transition: var(--transition);
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+        
+        .range-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .range-group input {
+            flex: 1;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            background: var(--light-blue);
+            padding: 8px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        .checkbox-label:hover {
+            background: #e1eeff;
+        }
+        
+        .checkbox-label input {
+            width: auto;
+            margin-right: 7px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(120deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            box-shadow: 0 4px 6px rgba(30, 60, 114, 0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(120deg, var(--light-bg) 0%, var(--light-blue) 100%);
+            color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(42, 82, 152, 0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(120deg, #172b58 0%, #213e85 100%);
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(120deg, #e4edf9 0%, #d4e3ff 100%);
+        }
+        
+        /* 数据统计和图表区域 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-light);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--light-bg) 100%);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .stats-header h3 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stats-header h3 i {
+            color: var(--secondary-color);
+            background: var(--light-blue);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: var(--light-bg);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid var(--secondary-color);
+            background: linear-gradient(135deg, var(--light-bg) 0%, var(--light-blue) 100%);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+            font-feature-settings: "tnum";
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            color: var(--text-medium);
+        }
+        
+        .chart-container {
+            height: 280px;
+            margin-top: 15px;
+            position: relative;
+            flex: 1;
+        }
+        
+        /* 数据表格区域 */
+        .data-table-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--light-bg) 100%);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        .data-table-container-inner {
+            overflow-x: auto;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th {
+            background: linear-gradient(to bottom, var(--light-blue), #e1eeff);
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        
+        th:hover {
+            background: linear-gradient(to bottom, #dde9ff, #d0deff);
+        }
+        
+        th i {
+            margin-left: 6px;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+        }
+        
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        
+        tr:hover td {
+            background-color: var(--light-blue);
+        }
+        
+        .credit-AAA { color: #2e7d32; font-weight: 600; }
+        .credit-AA { color: #43a047; font-weight: 600; }
+        .credit-A { color: #81c784; font-weight: 600; }
+        .credit-B { color: #ffc107; font-weight: 600; }
+        .credit-C { color: #fb8c00; font-weight: 600; }
+        .credit-D { color: #dc3545; font-weight: 600; }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .badge-AAA { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-AA { background: #e8f5e9; color: #43a047; border: 1px solid #c8e6c9; }
+        .badge-A { background: #e8f5e9; color: #81c784; border: 1px solid #c8e6c9; }
+        .badge-B { background: #fff8e1; color: #ffc107; border: 1px solid #ffe082; }
+        .badge-C { background: #fff3e0; color: #fb8c00; border: 1px solid #ffcc80; }
+        .badge-D { background: #ffebee; color: #dc3545; border: 1px solid #ffcdd2; }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .page-btn {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--light-blue);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            color: var(--text-medium);
+        }
+        
+        .page-btn:hover {
+            background: #e4edf9;
+            color: var(--primary-color);
+        }
+        
+        .page-btn.active {
+            background: linear-gradient(120deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 35px;
+            padding: 20px;
+            color: var(--text-medium);
+            font-size: 0.9rem;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .file-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+                position: relative;
+                margin-bottom: 20px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .filter-container,
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .filter-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .mode-switch {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .collapse-sidebar-btn {
+                display: none;
+            }
+            
+            .file-sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 999;
+                width: 280px;
+                max-height: none;
+                box-shadow: 3px 0 15px rgba(0, 0, 0, 0.2);
+            }
+            
+            .file-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px 15px;
+                padding-top: 80px;
+            }
+            
+            header {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .subtitle {
+                font-size: 0.95rem;
+                padding: 8px 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-card, .stats-card, .data-table-container {
+                padding: 20px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .stat-value {
+                font-size: 1.8rem;
+            }
+            
+            .filter-group h3 {
+                font-size: 1rem;
+            }
+            
+            .file-date {
+                display: none;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .stat-item {
+                padding: 15px;
+            }
+            
+            .filter-container,
+            .stats-container {
+                gap: 15px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .file-sidebar {
+                width: 100%;
+                max-width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .file-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                padding: 15px;
+                padding-top: 70px;
+            }
+            
+            .filter-card, .stats-card, .data-table-container {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.6rem;
+            }
+            
+            .pagination {
+                gap: 5px;
+            }
+            
+            .page-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+            
+            footer {
+                padding: 15px;
+                font-size: 0.8rem;
+            }
+            
+            .checkbox-group {
+                gap: 5px;
+            }
+            
+            .checkbox-label {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* 遮罩层 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+        
+        /* 移动端关闭按钮 */
+        .mobile-close-btn {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: var(--transition);
+        }
+        
+        .mobile-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-close-btn {
+                display: flex;
+            }
+        }
+        
+        /* 无数据状态 */
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-medium);
+        }
+        
+        .no-data i {
+            font-size: 3rem;
+            color: #d0ddee;
+            margin-bottom: 15px;
+        }
+        
+        .no-data p {
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- 遮罩层 -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <div class="container">
+        <!-- 左侧文件列表 -->
+        <div class="file-sidebar" id="file-sidebar">
+            <button class="collapse-sidebar-btn" id="collapse-sidebar-btn">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="mobile-close-btn" id="mobile-close-btn">
+                <i class="fas fa-times"></i>
+            </div>
+            
+            <div class="file-sidebar-header">
+                <i class="fab fa-github"></i>
+                <h2>历史数据仓库</h2>
+            </div>
+            
+            <div class="repo-info">
+                <p>coomaso/fengfeng/historical_data</p>
+                <p>更新于 <span id="repo-update-date">2025-07-02</span></p>
+            </div>
+            
+            <div class="directory-tree" id="directory-tree">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>正在加载数据目录...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧主内容区 -->
+        <div class="main-content">
+            <header>
+                <h1><i class="fas fa-building"></i> 宜昌市企业信用数据筛分系统</h1>
+                <p class="subtitle">基于GitHub历史数据仓库的企业信用信息查询与分析工具</p>
+            </header>
+            
+            <div class="filter-container">
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <h2><i class="fas fa-filter"></i> 数据筛选</h2>
+                        <div class="mode-switch">
+                            <div class="mode-btn active" onclick="setMode('simple')">简化模式</div>
+                            <div class="mode-btn" onclick="setMode('advanced')">高级模式</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 简化模式 -->
+                    <div id="simple-filters">
+                        <div class="filter-group">
+                            <h3><i class="fas fa-search"></i> 企业名称</h3>
+                            <input type="text" id="company-search" placeholder="输入企业名称关键字...">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <h3><i class="fas fa-certificate"></i> 资质类别</h3>
+                            <select id="qualification-type">
+                                <option value="">全部类别</option>
+                                <option value="建筑企业">建筑企业</option>
+                                <option value="制造企业">制造企业</option>
+                                <option value="服务企业">服务企业</option>
+                                <option value="科技企业">科技企业</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 高级模式（默认隐藏） -->
+                    <div id="advanced-filters" style="display: none;">
+                        <div class="filter-group">
+                            <h3><i class="fas fa-star"></i> 诚信等级</h3>
+                            <div class="checkbox-group" id="credit-level-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="AAA" checked>
+                                    AAA级
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="AA" checked>
+                                    AA级
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="A" checked>
+                                    A级
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="B" checked>
+                                    B级
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="C" checked>
+                                    C级
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="credit-level" value="无级" checked>
+                                    无级
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <h3><i class="fas fa-tachometer-alt"></i> 诚信分值范围</h3>
+                            <div class="range-group">
+                                <input type="number" id="min-score" placeholder="最小值" min="0" max="140">
+                                <span>-</span>
+                                <input type="number" id="max-score" placeholder="最大值" min="0" max="140">
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <h3><i class="fas fa-hard-hat"></i> 建筑业企业资质</h3>
+                            <div class="checkbox-group" id="construction-qualification-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="construction-qualification" value="建筑工程">
+                                    建筑工程
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="construction-qualification" value="市政公用">
+                                    市政公用
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="construction-qualification" value="机电工程">
+                                    机电工程
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="construction-qualification" value="电力工程">
+                                    电力工程
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn-primary" id="apply-filters">
+                            <i class="fas fa-check"></i> 应用筛选
+                        </button>
+                        <button class="btn-secondary" id="reset-filters">
+                            <i class="fas fa-redo"></i> 重置
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <h2><i class="fas fa-chart-pie"></i> 数据概览</h2>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <h3><i class="fas fa-building"></i> 当前数据文件</h3>
+                        <p id="current-file">未选择文件</p>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <h3><i class="fas fa-database"></i> 数据统计</h3>
+                        <p>总记录: <span id="total-records">0</span> 条</p>
+                        <p>时间范围: <span id="date-range">2023-2025年</span></p>
+                        <p>最后更新: <span id="last-update">2025-07-02 05:24</span></p>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
+                        <p>1. 左侧选择数据文件</p>
+                        <p>2. 设置筛选条件</p>
+                        <p>3. 点击"应用筛选"查看结果</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数据统计和图表 -->
+            <div class="stats-container">
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <h3><i class="fas fa-chart-pie"></i> 企业信用分布</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="creditChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <h3><i class="fas fa-chart-bar"></i> 数据统计</h3>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-companies">0</div>
+                            <div class="stat-label">总企业数量</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="a-level">0</div>
+                            <div class="stat-label">A级诚信企业</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avg-score">0</div>
+                            <div class="stat-label">平均诚信分</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-certs">0</div>
+                            <div class="stat-label">资质总数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数据表格 -->
+            <div class="data-table-container">
+                <div class="stats-header">
+                    <h3><i class="fas fa-table"></i> 企业信用数据</h3>
+                    <div>共找到 <span id="record-count">0</span> 条记录</div>
+                </div>
+                
+                <div class="data-table-container-inner">
+                    <table id="credit-data"> 
+                        <thead> 
+                            <tr> 
+                                <th data-sort="company"><i class="fas fa-sort"></i> 企业名称</th> 
+                                <th data-sort="type"><i class="fas fa-sort"></i> 资质类别</th> 
+                                <th data-sort="level"><i class="fas fa-sort"></i> 诚信等级</th> 
+                                <th data-sort="score"><i class="fas fa-sort"></i> 诚信分值</th> 
+                                <th data-sort="detail"><i class="fas fa-sort"></i> 资质明细</th> 
+                                <th data-sort="bonus"><i class="fas fa-sort"></i> 专项加分</th> 
+                                <th data-sort="deduction"><i class="fas fa-sort"></i> 扣分</th> 
+                            </tr> 
+                        </thead> 
+                        <tbody id="data-body"> 
+                            <tr> 
+                                <td colspan="7" class="loading"> 
+                                    <i class="fas fa-database"></i> 
+                                    <p>请从左侧选择数据文件</p> 
+                                </td> 
+                            </tr> 
+                        </tbody> 
+                    </table> 
+                </div>
+                
+                <div class="pagination" id="pagination-container">
+                    <!-- 分页按钮将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <footer>
+                <p>宜昌市企业信用数据筛分系统 &copy; 2025 - 数据更新于 <span id="current-date">2025-07-02</span></p>
+                <p>本系统提供只读数据访问，无数据编辑权限 | 数据来源: coomaso/fengfeng/historical_data</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // GitHub API配置
+        const GITHUB_TOKEN = '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';
+        const YOUR_USERNAME = 'coomaso';
+        const REPO_NAME = 'fengfeng';
+        const FOLDER_PATH = 'historical_data';
+        
+        // 当前加载的数据
+        let currentData = [];
+        let filteredData = [];
+        const itemsPerPage = 10;
+        let currentPage = 1;
+        // 排序状态
+        let sortState = {
+            field: null,
+            direction: 'asc'
+        };
+        
+        // 初始化图表
+        let creditChart;
+        function initChart() {
+            const ctx = document.getElementById('creditChart').getContext('2d');
+            creditChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['AAA级', 'AA级', 'A级', 'B级', 'C级', '无级'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            '#2e7d32', // AAA
+                            '#43a047', // AA
+                            '#81c784', // A
+                            '#ffca28', // B
+                            '#fb8c00', // C
+                            '#bdbdbd'  // 无级
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 20,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw} 家企业`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 获取GitHub仓库内容
+        async function fetchGitHubRepoContent() {
+            const apiUrl = `https://api.github.com/repos/${YOUR_USERNAME}/${REPO_NAME}/contents/${FOLDER_PATH}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': GITHUB_TOKEN ? `Bearer ${GITHUB_TOKEN}` : '',
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`GitHub API请求失败: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('获取GitHub仓库内容时出错:', error);
+                throw error;
+            }
+        }
+        
+        // 获取目录内容
+        async function fetchFolderContent(folderUrl) {
+            try {
+                const response = await fetch(folderUrl, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`GitHub API请求失败: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('获取目录内容时出错:', error);
+                return [];
+            }
+        }
+        
+        // 渲染目录树
+        async function renderDirectoryTree() {
+            const treeContainer = document.getElementById('directory-tree');
+            
+            try {
+                const repoContent = await fetchGitHubRepoContent();
+                
+                // 收集所有Excel文件并提取日期信息
+                const allExcelFiles = [];
+                const folders = repoContent.filter(item => item.type === 'dir');
+                
+                for (const folder of folders) {
+                    const folderContent = await fetchFolderContent(folder.url);
+                    const excelFiles = folderContent.filter(file => 
+                        file.type === 'file' && file.name.endsWith('.xlsx')
+                    );
+                    
+                    // 提取文件夹名称中的日期 (格式: YYYY-MM)
+                    const folderDateMatch = folder.name.match(/(\d{4})-(\d{2})/);
+                    if (folderDateMatch) {
+                        const folderYear = folderDateMatch[1];
+                        const folderMonth = folderDateMatch[2];
+                        
+                        // 为每个文件添加完整日期信息
+                        excelFiles.forEach(file => {
+                            // 提取文件名中的日期 (格式: YYYYMMDD)
+                            const fileDateMatch = file.name.match(/(\d{8})/);
+                            if (fileDateMatch) {
+                                const fileDateStr = fileDateMatch[1];
+                                file.fullDate = new Date(
+                                    parseInt(fileDateStr.substring(0, 4)),
+                                    parseInt(fileDateStr.substring(4, 6)) - 1,
+                                    parseInt(fileDateStr.substring(6, 8))
+                                );
+                                allExcelFiles.push(file);
+                            }
+                        });
+                    }
+                }
+        
+                // 找到最新文件
+                const latestFile = findLatestFile(allExcelFiles);
+        
+                // 渲染目录树并自动选择最新文件
+                renderDirectoryStructure(allExcelFiles);
+                
+                if (latestFile) {
+                    selectFile(latestFile.name, latestFile.url);
+                }
+            } catch (error) {
+                treeContainer.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>加载失败: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        // 查找最新文件的辅助函数
+        function findLatestFile(files) {
+            if (files.length === 0) return null;
+            
+            // 按日期降序排序
+            const sortedFiles = [...files].sort((a, b) => b.fullDate - a.fullDate);
+            
+            // 返回最新文件
+            return sortedFiles[0];
+        }
+        
+        // 渲染目录结构的辅助函数
+        function renderDirectoryStructure(files) {
+            const treeContainer = document.getElementById('directory-tree');
+            treeContainer.innerHTML = '';
+        
+            // 按文件夹分组文件
+            const filesByFolder = {};
+            files.forEach(file => {
+                const folderName = file.path.split('/').slice(0, -1).join('/');
+                if (!filesByFolder[folderName]) {
+                    filesByFolder[folderName] = [];
+                }
+                filesByFolder[folderName].push(file);
+            });
+        
+            // 渲染每个文件夹及其文件
+            Object.keys(filesByFolder).forEach(folderName => {
+                const folderElement = document.createElement('div');
+                folderElement.className = 'tree-item folder';
+                
+                // 提取文件夹中的日期部分
+                const folderDateMatch = folderName.match(/(\d{4}-\d{2})/);
+                const displayName = folderDateMatch ? folderDateMatch[1] : folderName;
+                
+                folderElement.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    <div class="file-name">${displayName}</div>
+                    <i class="fas fa-chevron-right"></i>
+                `;
+        
+                const fileContainer = document.createElement('div');
+                fileContainer.className = 'tree-folder';
+        
+                // 按日期对文件排序
+                const sortedFiles = [...filesByFolder[folderName]].sort((a, b) => b.fullDate - a.fullDate);
+                
+                sortedFiles.forEach(file => {
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'tree-item';
+                    fileElement.dataset.file = file.name;
+                    fileElement.dataset.apiUrl = file.url;
+        
+                    // 提取文件日期信息
+                    const dateStr = file.name.match(/(\d{8})/)[1];
+                    const displayDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                    const displayTime = file.name.match(/(\d{8})(\d{4})/)[2];
+                    const displayDateTime = `${displayDate} ${displayTime.substring(0, 2)}:${displayTime.substring(2, 4)}`;
+        
+                    fileElement.innerHTML = `
+                        <i class="far fa-file-excel"></i>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-date">${displayDateTime}</div>
+                    `;
+        
+                    fileElement.addEventListener('click', () => {
+                        selectFile(file.name, file.url);
+                    });
+        
+                    fileContainer.appendChild(fileElement);
+                });
+        
+                // 文件夹点击事件
+                folderElement.addEventListener('click', () => {
+                    const icon = folderElement.querySelector('.fa-chevron-right');
+                    if (fileContainer.classList.contains('open')) {
+                        fileContainer.classList.remove('open');
+                        icon.classList.remove('fa-rotate-90');
+                    } else {
+                        fileContainer.classList.add('open');
+                        icon.classList.add('fa-rotate-90');
+                    }
+                });
+        
+                treeContainer.appendChild(folderElement);
+                treeContainer.appendChild(fileContainer);
+            });
+        }
+        // 选择文件
+        function selectFile(fileName, apiUrl) {
+            document.querySelectorAll('.tree-item[data-file]').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const selectedItem = document.querySelector(`.tree-item[data-file="${fileName}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('active');
+            }
+            
+            document.getElementById('current-file').textContent = fileName;
+            
+            // 更新副标题
+            document.querySelector('.subtitle').innerHTML = 
+                `基于历史数据仓库的企业信用信息查询与分析工具 - 当前文件: <strong>${fileName}</strong>`;
+            
+            // 加载数据
+            loadData(fileName, apiUrl);
+            
+            // 在移动端选择文件后自动关闭侧边栏
+            if (window.innerWidth <= 768) {
+                document.getElementById('file-sidebar').classList.remove('open');
+                document.getElementById('sidebar-overlay').style.display = 'none';
+                document.getElementById('mobile-menu-btn').style.display = 'block';
+            }
+        }
+        
+        // Base64转ArrayBuffer函数
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        // 处理合并单元格数据 
+        function processMergedCells(jsonData) {
+            const processedData = []; 
+            let lastValidRow = {}; 
+            
+            for (let row of jsonData) { 
+                // 处理合并单元格导致的空值 
+                if (!row['企业名称'] && lastValidRow['企业名称']) { 
+                    row['企业名称'] = lastValidRow['企业名称']; 
+                } 
+                
+                if (!row['资质类别'] && lastValidRow['资质类别']) { 
+                    row['资质类别'] = lastValidRow['资质类别']; 
+                } 
+                
+                if (!row['诚信等级'] && lastValidRow['诚信等级']) { 
+                    row['诚信等级'] = lastValidRow['诚信等级']; 
+                } 
+                
+                // 处理诚信分值（确保为数字）
+                row['诚信分值'] = parseFloat(row['诚信分值']) || 0;
+                
+                // 处理加分和扣分（确保为数字）
+                row['专项加分'] = parseFloat(row['专项加分']) || 0;
+                row['扣分'] = parseFloat(row['扣分']) || 0;
+                
+                // 存储当前有效行 
+                if (row['企业名称']) { 
+                    lastValidRow = {...row }; 
+                } 
+                
+                processedData.push(row);  
+            } 
+            
+            return processedData; 
+        } 
+        
+        // 提取建筑业企业资质
+        function extractConstructionQualifications(detail) {
+            if (!detail) return [];
+            
+            // 匹配建筑业企业资质模式
+            const regex = /建筑业企业资质_([^_]+_[^_]+)_[^_]+/g;
+            const matches = [];
+            let match;
+            
+            while ((match = regex.exec(detail)) !== null) {
+                matches.push(match[1]);
+            }
+            
+            return [...new Set(matches)]; // 去重
+        }
+        
+        // 加载Excel数据 
+        async function loadData(fileName, apiUrl) { 
+            const dataBody = document.getElementById('data-body');  
+            dataBody.innerHTML  = ` 
+                <tr> 
+                    <td colspan="7" class="loading"> 
+                        <i class="fas fa-spinner fa-spin"></i> 
+                        <p>正在加载数据...</p> 
+                    </td> 
+                </tr> 
+            `; 
+            
+            try { 
+                // 检查XLSX库是否已加载 
+                if (typeof XLSX === 'undefined') { 
+                    throw new Error('XLSX库未加载成功，请检查网络连接或刷新页面'); 
+                } 
+                
+                // 获取文件信息 
+                const response = await fetch(apiUrl, { 
+                    headers: { 
+                        'Authorization': `token ${GITHUB_TOKEN}`, 
+                        'Accept': 'application/vnd.github.v3+json'  
+                    } 
+                }); 
+                
+                if (!response.ok)  { 
+                    throw new Error(`获取文件信息失败: ${response.status}`);  
+                } 
+                
+                const fileInfo = await response.json();  
+                const content = fileInfo.content;  
+                
+                // 将base64内容转换为ArrayBuffer 
+                const arrayBuffer = base64ToArrayBuffer(content); 
+                
+                // 解析Excel数据 
+                const workbook = XLSX.read(arrayBuffer,  { type: 'array' }); 
+                const firstSheetName = workbook.SheetNames[0]; 
+                const worksheet = workbook.Sheets[firstSheetName]; 
+                
+                // 转换为JSON 
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);  
+                
+                // 处理合并单元格数据 
+                const processedData = processMergedCells(jsonData); 
+                
+                // 处理数据 
+                currentData = processedData.map(item  => {
+                    // 规范化诚信等级
+                    let level = item['诚信等级'] || '';
+                    level = level.trim();
+                    
+                    // 将"AAA级"格式化为"AAA"等
+                    if (level.endsWith('级')) {
+                        level = level.substring(0, level.length - 1);
+                    }
+                    
+                    // 处理空白等级为"无级"
+                    if (!level) {
+                        level = '无';
+                    }
+                    
+                    // 提取建筑业企业资质
+                    const qualifications = extractConstructionQualifications(item['资质明细']);
+                    
+                    return { 
+                        company: item['企业名称'] || '未知企业', 
+                        type: item['资质类别'] || '未知类别', 
+                        level: level, 
+                        score: item['诚信分值'] || 100, 
+                        detail: item['资质明细'] || '无资质明细', 
+                        bonus: item['专项加分'] || 0, 
+                        deduction: item['扣分'] || 0,
+                        qualifications: qualifications // 存储提取的资质
+                    }; 
+                });
+                
+                filteredData = [...currentData]; 
+                
+                // 重置排序状态
+                sortState = {
+                    field: null,
+                    direction: 'asc'
+                };
+                
+                // 渲染数据 
+                renderData(filteredData); 
+                
+                // 更新统计数据 
+                updateStats(filteredData);
+                updateSortIcons();
+                
+                // 更新筛选器选项
+                updateFilterOptions();
+            } catch (error) { 
+                dataBody.innerHTML  = ` 
+                    <tr> 
+                        <td colspan="7" class="no-data"> 
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>${error.message}</p>  
+                        </td> 
+                    </tr> 
+                `; 
+                console.error(' 加载Excel数据时出错:', error); 
+            } 
+        } 
+        
+        // 更新筛选器选项
+        function updateFilterOptions() {
+            // 更新诚信等级选项
+            const creditLevels = ['AAA', 'AA', 'A', 'B', 'C', '无'];
+            const creditLevelGroup = document.getElementById('credit-level-group');
+            creditLevelGroup.innerHTML = '';
+            
+            creditLevels.forEach(level => {
+                const label = document.createElement('label');
+                label.className = 'checkbox-label';
+                label.innerHTML = `
+                    <input type="checkbox" name="credit-level" value="${level}" checked>
+                    ${level}级
+                `;
+                creditLevelGroup.appendChild(label);
+            });
+            
+            // 更新资质类别选项
+            const qualificationTypeSelect = document.getElementById('qualification-type');
+            qualificationTypeSelect.innerHTML = '<option value="">全部类别</option>';
+            
+            // 收集所有资质类别
+            const allTypes = new Set();
+            currentData.forEach(item => {
+                if (item.type) {
+                    allTypes.add(item.type);
+                }
+            });
+            
+            // 添加选项
+            allTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                qualificationTypeSelect.appendChild(option);
+            });
+            
+            // 更新建筑业企业资质选项
+            const constructionGroup = document.getElementById('construction-qualification-group');
+            constructionGroup.innerHTML = '';
+            
+            // 收集所有建筑业企业资质
+            const allQualifications = new Set();
+            currentData.forEach(item => {
+                item.qualifications.forEach(qualification => {
+                    allQualifications.add(qualification);
+                });
+            });
+            
+            // 添加选项
+            allQualifications.forEach(qualification => {
+                const label = document.createElement('label');
+                label.className = 'checkbox-label';
+                label.innerHTML = `
+                    <input type="checkbox" name="construction-qualification" value="${qualification}">
+                    ${qualification}
+                `;
+                constructionGroup.appendChild(label);
+            });
+            
+            // 重置筛选范围
+            document.getElementById('min-score').value = '';
+            document.getElementById('max-score').value = '';
+        }
+        
+        // 渲染数据表格 
+        function renderData(data) { 
+            const dataBody = document.getElementById('data-body');  
+            dataBody.innerHTML  = ''; 
+            
+            if (data.length  === 0) { 
+                dataBody.innerHTML  = ` 
+                    <tr> 
+                        <td colspan="7" class="no-data"> 
+                            <i class="fas fa-database"></i> 
+                            <p>没有找到匹配的数据</p> 
+                        </td> 
+                    </tr> 
+                `; 
+                return; 
+            } 
+            
+            // 排序数据
+            if (sortState.field) {
+                const sortedData = [...data].sort((a, b) => {
+                    let valueA = a[sortState.field];
+                    let valueB = b[sortState.field];
+                    
+                    // 特殊处理诚信等级排序
+                    if (sortState.field === 'level') {
+                        const levelOrder = ['AAA', 'AA', 'A', 'B', 'C', '无'];
+                        return (sortState.direction === 'asc' ? 1 : -1) * 
+                               (levelOrder.indexOf(valueA) - levelOrder.indexOf(valueB));
+                    }
+                    
+                    // 处理不同数据类型的排序
+                    if (typeof valueA === 'string' && typeof valueB === 'string') {
+                        return (sortState.direction === 'asc' ? 1 : -1) * 
+                               valueA.localeCompare(valueB);
+                    } else {
+                        return (sortState.direction === 'asc' ? 1 : -1) * 
+                               (valueA - valueB);
+                    }
+                });
+                
+                data = sortedData;
+            }
+            
+            // 分页逻辑 
+            const startIndex = (currentPage - 1) * itemsPerPage; 
+            const endIndex = Math.min(startIndex  + itemsPerPage, data.length);  
+            const pageData = data.slice(startIndex,  endIndex); 
+            
+            pageData.forEach(item  => { 
+                const row = document.createElement('tr');
+                
+                // 根据诚信等级确定样式
+                let levelClass = 'A';
+                let badgeClass = 'badge-A';
+                let levelText = item.level;
+                
+                if (item.level === 'AAA') {
+                    levelClass = 'AAA';
+                    badgeClass = 'badge-AAA';
+                    levelText = 'AAA级';
+                } else if (item.level === 'AA') {
+                    levelClass = 'AA';
+                    badgeClass = 'badge-AA';
+                    levelText = 'AA级';
+                } else if (item.level === 'A') {
+                    levelClass = 'A';
+                    badgeClass = 'badge-A';
+                    levelText = 'A级';
+                } else if (item.level === 'B') {
+                    levelClass = 'B';
+                    badgeClass = 'badge-B';
+                    levelText = 'B级';
+                } else if (item.level === 'C') {
+                    levelClass = 'C';
+                    badgeClass = 'badge-C';
+                    levelText = 'C级';
+                } else if (item.level === '无') {
+                    levelClass = 'D';
+                    badgeClass = 'badge-D';
+                    levelText = '无级';
+                }
+                
+                row.innerHTML  = ` 
+                    <td>${item.company}</td>  
+                    <td>${item.type}</td>  
+                    <td><span class="badge ${badgeClass}">${levelText}</span></td> 
+                    <td class="credit-${levelClass}">${item.score}</td>  
+                    <td>${item.detail}</td>  
+                    <td>${item.bonus}</td>  
+                    <td>${item.deduction}</td>  
+                `; 
+                dataBody.appendChild(row);  
+            }); 
+            
+            document.getElementById('record-count').textContent  = data.length;  
+            
+            // 更新分页控件 
+            updatePagination(data.length);  
+        } 
+        
+        // 更新排序图标
+        function updateSortIcons() {
+            document.querySelectorAll('#credit-data th').forEach(th => {
+                const sortIcon = th.querySelector('i');
+                if (sortIcon) {
+                    sortIcon.className = 'fas fa-sort';
+                }
+            });
+            
+            if (sortState.field) {
+                const th = document.querySelector(`#credit-data th[data-sort="${sortState.field}"]`);
+                if (th) {
+                    const sortIcon = th.querySelector('i');
+                    if (sortIcon) {
+                        sortIcon.className = `fas fa-sort-${sortState.direction === 'asc' ? 'up' : 'down'}`;
+                    }
+                }
+            }
+        }
+        
+        // 更新分页控件
+        function updatePagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const paginationContainer = document.getElementById('pagination-container');
+            paginationContainer.innerHTML = '';
+            
+            if (totalPages > 1) {
+                // 首页按钮
+                const firstButton = document.createElement('div');
+                firstButton.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+                firstButton.innerHTML = '<i class="fas fa-step-backward"></i>';
+                firstButton.title = '首页';
+                firstButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage = 1;
+                        renderData(filteredData);
+                    }
+                });
+                paginationContainer.appendChild(firstButton);
+                
+                // 上一页按钮
+                const prevButton = document.createElement('div');
+                prevButton.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+                prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderData(filteredData);
+                    }
+                });
+                paginationContainer.appendChild(prevButton);
+                
+                // 显示页码按钮数量控制（最多显示5个）
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage < maxVisiblePages - 1) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                // 页码按钮
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageButton = document.createElement('div');
+                    pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                    pageButton.textContent = i;
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderData(filteredData);
+                    });
+                    paginationContainer.appendChild(pageButton);
+                }
+                
+                // 下一页按钮
+                const nextButton = document.createElement('div');
+                nextButton.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+                nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderData(filteredData);
+                    }
+                });
+                paginationContainer.appendChild(nextButton);
+                
+                // 尾页按钮
+                const lastButton = document.createElement('div');
+                lastButton.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+                lastButton.innerHTML = '<i class="fas fa-step-forward"></i>';
+                lastButton.title = '尾页';
+                lastButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage = totalPages;
+                        renderData(filteredData);
+                    }
+                });
+                paginationContainer.appendChild(lastButton);
+            }
+        }
+        
+        // 更新统计数据
+        function updateStats(data) {
+            document.getElementById('total-records').textContent = data.length;
+            document.getElementById('total-companies').textContent = data.length;
+            
+            // 计算各级企业数量
+            const aaaLevelCount = data.filter(item => item.level === 'AAA').length;
+            const aaLevelCount = data.filter(item => item.level === 'AA').length;
+            const aLevelCount = data.filter(item => item.level === 'A').length;
+            const bLevelCount = data.filter(item => item.level === 'B').length;
+            const cLevelCount = data.filter(item => item.level === 'C').length;
+            const noLevelCount = data.filter(item => item.level === '无').length;
+            
+            document.getElementById('a-level').textContent = aLevelCount;
+            
+            // 计算平均分
+            const totalScore = data.reduce((sum, item) => sum + (item.score || 0), 0);
+            const avgScore = data.length > 0 ? (totalScore / data.length).toFixed(1) : 0;
+            document.getElementById('avg-score').textContent = avgScore;
+            
+            // 计算资质总数
+            document.getElementById('total-certs').textContent = data.length;
+            
+            // 更新图表数据
+            if (creditChart) {
+                creditChart.data.datasets[0].data = [aaaLevelCount, aaLevelCount, aLevelCount, bLevelCount, cLevelCount, noLevelCount];
+                creditChart.update();
+            }
+        }
+        
+        // 筛选模式切换
+        function setMode(mode) {
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            modeBtns.forEach(btn => btn.classList.remove('active'));
+            
+            if (mode === 'simple') {
+                document.querySelector('.mode-btn:first-child').classList.add('active');
+                document.getElementById('simple-filters').style.display = 'block';
+                document.getElementById('advanced-filters').style.display = 'none';
+            } else {
+                document.querySelector('.mode-btn:last-child').classList.add('active');
+                document.getElementById('simple-filters').style.display = 'none';
+                document.getElementById('advanced-filters').style.display = 'block';
+            }
+        }
+        
+        // 应用筛选按钮
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            const companySearch = document.getElementById('company-search').value.toLowerCase();
+            const qualificationType = document.getElementById('qualification-type').value;
+            
+            // 高级筛选条件
+            const minScore = parseInt(document.getElementById('min-score').value) || 0;
+            const maxScore = parseInt(document.getElementById('max-score').value) || 999;
+            
+            // 获取选中的诚信等级
+            const creditLevels = [];
+            document.querySelectorAll('input[name="credit-level"]:checked').forEach(checkbox => {
+                creditLevels.push(checkbox.value);
+            });
+            
+            // 获取选中的建筑业企业资质
+            const constructionQualifications = [];
+            document.querySelectorAll('input[name="construction-qualification"]:checked').forEach(checkbox => {
+                constructionQualifications.push(checkbox.value);
+            });
+            
+            // 过滤数据
+            filteredData = currentData.filter(item => {
+                // 公司名称筛选
+                if (companySearch && !item.company.toLowerCase().includes(companySearch)) {
+                    return false;
+                }
+                
+                // 资质类别筛选
+                if (qualificationType && item.type !== qualificationType) {
+                    return false;
+                }
+                
+                // 诚信分值范围筛选
+                if ((minScore > 0 && item.score < minScore) || 
+                    (maxScore < 999 && item.score > maxScore)) {
+                    return false;
+                }
+                
+                // 诚信等级筛选
+                if (creditLevels.length > 0 && !creditLevels.includes(item.level)) {
+                    return false;
+                }
+                
+                // 建筑业企业资质筛选
+                if (constructionQualifications.length > 0) {
+                    const hasQualification = constructionQualifications.some(qualification => 
+                        item.qualifications.includes(qualification)
+                    );
+                    if (!hasQualification) return false;
+                }
+                
+                return true;
+            });
+            
+            // 重置排序和分页
+            sortState = {
+                field: null,
+                direction: 'asc'
+            };
+            currentPage = 1;
+            
+            // 渲染筛选后的数据
+            renderData(filteredData);
+            updateSortIcons();
+            
+            // 更新统计数据
+            updateStats(filteredData);
+        });
+        
+        // 重置筛选按钮
+        document.getElementById('reset-filters').addEventListener('click', function() {
+            document.getElementById('company-search').value = '';
+            document.getElementById('qualification-type').value = '';
+            
+            // 重置高级筛选
+            document.getElementById('min-score').value = '';
+            document.getElementById('max-score').value = '';
+            
+            // 重置为简化模式
+            setMode('simple');
+            
+            // 重置所有复选框为选中状态
+            document.querySelectorAll('input[name="credit-level"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            // 重置建筑业企业资质复选框
+            document.querySelectorAll('input[name="construction-qualification"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // 重新加载原始数据
+            filteredData = [...currentData];
+            sortState = {
+                field: null,
+                direction: 'asc'
+            };
+            currentPage = 1;
+            renderData(filteredData);
+            updateSortIcons();
+            updateStats(filteredData);
+        });
+        
+        // 为表头添加点击事件监听器 
+        document.querySelectorAll('#credit-data th').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortBy = th.dataset.sort;
+                if (!sortBy) return;
+                
+                // 切换排序方向
+                if (sortState.field === sortBy) {
+                    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState.field = sortBy;
+                    sortState.direction = 'asc';
+                }
+                
+                // 排序并渲染数据
+                renderData(filteredData);
+                updateSortIcons();
+            });
+        });
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前日期
+            const now = new Date();
+            const currentDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            document.getElementById('current-date').textContent = currentDate;
+            document.getElementById('repo-update-date').textContent = currentDate;
+            
+            // 初始化目录树
+            renderDirectoryTree();
+            
+            // 初始化图表
+            initChart();
+            
+            // 移动端菜单按钮事件
+            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+                const sidebar = document.getElementById('file-sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.toggle('open');
+                overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+                this.style.display = sidebar.classList.contains('open') ? 'none' : 'block';
+            });
+            
+            // 移动端关闭按钮事件
+            document.getElementById('mobile-close-btn').addEventListener('click', function() {
+                const sidebar = document.getElementById('file-sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                sidebar.classList.remove('open');
+                overlay.style.display = 'none';
+                document.getElementById('mobile-menu-btn').style.display = 'block';
+            });
+            
+            // 遮罩层点击事件
+            document.getElementById('sidebar-overlay').addEventListener('click', function() {
+                const sidebar = document.getElementById('file-sidebar');
+                sidebar.classList.remove('open');
+                this.style.display = 'none';
+                document.getElementById('mobile-menu-btn').style.display = 'block';
+            });
+            
+            // 侧边栏折叠按钮事件
+            document.getElementById('collapse-sidebar-btn').addEventListener('click', function() {
+                const sidebar = document.getElementById('file-sidebar');
+                sidebar.classList.toggle('collapsed');
+                
+                // 更新按钮图标
+                const icon = this.querySelector('i');
+                if (sidebar.classList.contains('collapsed')) {
+                    icon.className = 'fas fa-chevron-right';
+                } else {
+                    icon.className = 'fas fa-chevron-left';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
