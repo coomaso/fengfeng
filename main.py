@@ -185,6 +185,7 @@ def fetch_company_detail(session: requests.Session, cec_id: str, company_name: s
                 "cechId": detail_data.get("data", {}).get("cechId", "")
             }
             print(f"成功获取企业信誉分明细: {company_detail.get('cioName')}")
+            print(company_detail)
             return company_detail
 
         except Exception as e:
