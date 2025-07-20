@@ -96,10 +96,10 @@ def parse_response_data(encrypted_data: str) -> dict:
 
     try:
         decrypted_str = aes_decrypt_base64(encrypted_data)
-        print(f"解密后的数据样本: {decrypted_str[:100]}...")  # 打印解密后的数据样本
+        print(f"解密后的数据样本: {decrypted_str[:200]}...")  # 打印解密后的数据样本
         return json.loads(decrypted_str)
     except json.JSONDecodeError as e:
-        print(f"JSON解析错误，数据样本: {encrypted_data[:50]}...")  # 打印错误数据样本
+        print(f"JSON解析错误，数据样本: {encrypted_data[:200]}...")  # 打印错误数据样本
         return {"error": f"invalid json format: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
@@ -171,7 +171,7 @@ def fetch_company_detail(session: requests.Session, cec_id: str, company_name: s
                 print("信誉分明细接口返回空数据")
                 last_error = "接口返回空数据"
                 continue
-
+            parse_response_data(encrypted_data)
             decrypted_str = aes_decrypt_base64(encrypted_data)
             detail_data = json.loads(decrypted_str)
 
