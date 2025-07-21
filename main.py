@@ -474,7 +474,7 @@ def export_to_excel(data, session, github_mode=False):
                     print(f"使用缓存获取企业信誉分明细: {company_name}")
                 else:
                     # 获取企业信誉分明细
-                    time.sleep(random.uniform(2, 5))
+                    time.sleep(random.randint(10, 50))
                     detail = fetch_company_detail(session, cec_id, company_name, max_retries=3) # 增强容错率
                     if detail:
                         item['detail'] = detail
