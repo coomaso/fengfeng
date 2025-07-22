@@ -191,7 +191,7 @@ def fetch_company_detail(session: requests.Session, cec_id: str, company_name: s
         except Exception as e:
             print(f"第{attempt}次获取企业信誉分明细失败: {str(e)}")
             last_error = str(e)
-            time.sleep(random.uniform(1, 5))  # 延迟后重试
+            time.sleep(random.uniform(10, 30))  # 延迟后重试
 
     print(f"获取企业信誉分明细失败: {last_error}")
     return {}
@@ -474,7 +474,7 @@ def export_to_excel(data, session, github_mode=False):
                     print(f"使用缓存获取企业信誉分明细: {company_name}")
                 else:
                     # 获取企业信誉分明细
-                    time.sleep(random.randint(10, 50))
+                    time.sleep(random.randint(30, 120))
                     detail = fetch_company_detail(session, cec_id, company_name, max_retries=3) # 增强容错率
                     if detail:
                         item['detail'] = detail
