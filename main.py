@@ -280,10 +280,10 @@ def export_to_excel(data, session, github_mode=False):
         {'id': 'csf',        'name': '初始分',     'width': 12,  'merge': True,  'align': 'center', 'format': '0'},
         {'id': 'zzmx',       'name': '资质明细',   'width': 50,  'merge': False, 'align': 'left'},
         {'id': 'cxdj',       'name': '诚信等级',   'width': 12,  'merge': False, 'align': 'center'},
-        {'id': 'score',      'name': '诚信分值',   'width': 12,  'merge': False, 'align': 'center', 'format': '0.0'},
+        {'id': 'score',      'name': '诚信分值',   'width': 12,  'merge': False, 'align': 'center', 'format': '0.00'},
         {'id': 'jcf',        'name': '基础分',     'width': 12,  'merge': False, 'align': 'center', 'format': '0'},
-        {'id': 'zxjf',       'name': '专项加分',   'width': 12,  'merge': False, 'align': 'center', 'format': '0.0'},
-        {'id': 'kf',         'name': '扣分',       'width': 12,  'merge': False, 'align': 'center', 'format': '0.0'},
+        {'id': 'zxjf',       'name': '专项加分',   'width': 12,  'merge': False, 'align': 'center', 'format': '0.00'},
+        {'id': 'kf',         'name': '扣分',       'width': 12,  'merge': False, 'align': 'center', 'format': '0.00'},
         {'id': 'eqlId',      'name': '资质ID',     'width': 25,  'merge': False, 'align': 'center'},
         {'id': 'orgId',      'name': '组织ID',     'width': 30,  'merge': True,  'align': 'center'},
         {'id': 'cecId',      'name': '信用档案ID', 'width': 30,  'merge': True,  'align': 'center'}
