@@ -589,50 +589,46 @@ def export_to_excel(data, session, github_mode=False):
     print("\n=== 开始生成信誉分明细表（按资质类型匹配分值≥110） ===")
 
     try:
-        # 1. 收集需要导出明细的资质类型记录（每个资质类型独立，分值>=110）
-        qual_to_info = {}  # key: (cecId, zzmx) -> {'cioName':企业名称, 'score':分值, 'eqtName':资质类别}
+        # 1. 收集需要导出明细的企业（cecId唯一，取最高分）
+        cecid_to_info = {}  # cecId -> { 'cioName': 企业名称, 'max_score': 最高分, 'eqtName': 资质类型（取第一个） }
         for record in processed_data:
             cec_id = record.get('cecId')
-            zzmx = record.get('zzmx')
-            if not cec_id or not zzmx:
+            if not cec_id:
                 continue
             score = record.get('score', 0)
             if score < 110:
                 continue
-            key = (cec_id, zzmx)
-            if key not in qual_to_info:
-                qual_to_info[key] = {
+            if cec_id not in cecid_to_info:
+                cecid_to_info[cec_id] = {
                     'cioName': record.get('cioName', ''),
-                    'score': score,
+                    'max_score': score,
                     'eqtName': record.get('eqtName', '')
                 }
             else:
-                if score > qual_to_info[key]['score']:
-                    qual_to_info[key]['score'] = score
-
-        if not qual_to_info:
-            print("没有诚信分值≥110的资质类型记录，跳过信誉分明细表生成。")
+                if score > cecid_to_info[cec_id]['max_score']:
+                    cecid_to_info[cec_id]['max_score'] = score
+    
+        if not cecid_to_info:
+            print("没有诚信分值≥110的企业，跳过信誉分明细表生成。")
         else:
-            # 2. 获取这些企业的明细（按企业去重，避免重复请求）
-            cec_set = set(cec_id for cec_id, _ in qual_to_info.keys())
-            for cec_id in cec_set:
+            # 2. 获取这些企业的明细（利用已有缓存或请求新数据）
+            for cec_id, info in cecid_to_info.items():
                 if cec_id not in detail_cache:
-                    company_name = next((info['cioName'] for (cid, _), info in qual_to_info.items() if cid == cec_id), '')
-                    if not company_name:
-                        continue
+                    # 延迟请求，避免过于频繁
                     time.sleep(random.uniform(5, 15))
-                    detail = fetch_company_detail(session, cec_id, company_name, max_retries=3)
+                    detail = fetch_company_detail(session, cec_id, info['cioName'], max_retries=3)
                     if detail:
                         detail_cache[cec_id] = detail
                     else:
-                        print(f"警告: 无法获取企业 {company_name} 的信誉分明细，跳过该企业。")
+                        print(f"警告: 无法获取企业 {info['cioName']} 的信誉分明细，跳过该企业。")
                         detail_cache[cec_id] = None
-
+    
             # 3. 创建新工作簿并定义表头
             detail_wb = Workbook()
+            # 删除默认工作表
             default_sheet = detail_wb.active
             detail_wb.remove(default_sheet)
-
+    
             bad_headers = [
                 "企业名称", "诚信分值", "违规人员", "身份证号", "违规事由", "项目名称",
                 "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "扣分值", "确认书编号"
@@ -641,40 +637,31 @@ def export_to_excel(data, session, github_mode=False):
                 "企业名称", "诚信分值", "获奖 / 表彰事由", "项目名称",
                 "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "加分值", "文号"
             ]
-
+    
             bad_sheet = detail_wb.create_sheet("不良行为")
             bad_sheet.append(bad_headers)
             good_sheet = detail_wb.create_sheet("良好行为")
             good_sheet.append(good_headers)
-
-            # 4. 填充数据（按资质类型匹配分值）
-            for cec_id, detail in detail_cache.items():
+    
+            # 4. 填充数据（根据实际字段映射）
+            for cec_id, info in cecid_to_info.items():
+                detail = detail_cache.get(cec_id)
                 if not detail:
                     continue
+                company_name = info['cioName']
+                max_score = info['max_score']
+                eqt_name = detail.get('eqtName', info.get('eqtName', ''))
+    
                 # 不良行为
                 for bl in detail.get('blxwArray', []):
-                    qual_name = bl.get('kfqyzz', '')
-                    if not qual_name:
-                        continue
-                    key = (cec_id, qual_name)
-                    info = qual_to_info.get(key)
-                    if not info:
-                        matched = False
-                        for (cid, zzmx), inf in qual_to_info.items():
-                            if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
-                                info = inf
-                                matched = True
-                                break
-                        if not matched:
-                            continue
                     row = [
-                        info['cioName'],                    # 企业名称
-                        info['score'],                      # 资质信誉分
+                        company_name,                       # 企业名称
+                        max_score,                          # 资质信誉分
                         bl.get('cfry', ''),                 # 违规人员
                         bl.get('cfryCertNum', ''),          # 身份证号
                         bl.get('reason', ''),               # 违规事由
                         bl.get('engName', ''),              # 项目名称
-                        qual_name,                          # 资质类型
+                        bl.get('kfqyzz', ''),               # 资质类型
                         bl.get('bzXwlb', ''),               # 行为类别
                         bl.get('beginDate', ''),            # 开始日期
                         bl.get('endDate', ''),              # 结束日期
@@ -683,30 +670,16 @@ def export_to_excel(data, session, github_mode=False):
                         bl.get('kftzsbh', '')               # 确认书编号
                     ]
                     bad_sheet.append(row)
-
+    
                 # 良好行为
                 for lh in detail.get('lhxwArray', []):
-                    qual_name = lh.get('jfqyzz', '')
-                    if not qual_name:
-                        continue
-                    key = (cec_id, qual_name)
-                    info = qual_to_info.get(key)
-                    if not info:
-                        matched = False
-                        for (cid, zzmx), inf in qual_to_info.items():
-                            if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
-                                info = inf
-                                matched = True
-                                break
-                        if not matched:
-                            continue
                     proj_name = lh.get('engName', '') or lh.get('hjyy', '')
                     row = [
-                        info['cioName'],                    # 企业名称
-                        info['score'],                      # 资质信誉分
+                        company_name,                       # 企业名称
+                        max_score,                          # 资质信誉分
                         lh.get('reason', ''),               # 获奖/表彰事由
                         proj_name,                          # 项目名称
-                        qual_name,                          # 资质类型
+                        bl.get('kfqyzz', ''),               # 资质类型
                         lh.get('bzXwlb', ''),               # 行为类别
                         lh.get('beginDate', ''),            # 开始日期
                         lh.get('endDate', ''),              # 结束日期
@@ -714,7 +687,7 @@ def export_to_excel(data, session, github_mode=False):
                         lh.get('realValue', 0),             # 加分值
                         lh.get('documentNumber', '')        # 文号
                     ]
-                good_sheet.append(row)
+                    good_sheet.append(row)
 
             # 5. 应用样式（冻结首行、表头蓝色、数据居中边框、自适应列宽）
             header_fill = PatternFill("solid", fgColor="003366")
