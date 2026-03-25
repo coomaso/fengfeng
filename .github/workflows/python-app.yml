@@ -3,6 +3,9 @@ name: 宜昌市信用数据自动采集
 on:
   schedule:
     - cron: '0 23 * * *'  # 每天UTC时间20:00运行（北京时间次日04:00）
+  push:
+    branches: [ "main" ]  # 仅在推送到 main 分支时执行
+    
 permissions:
   contents: write
 
@@ -33,31 +36,62 @@ jobs:
         ts=$(TZ='Asia/Shanghai' date +%Y%m%d%H%M)
         echo "ts=${ts}" >> $GITHUB_OUTPUT
 
-        # 清理历史输出文件
+        # 清理历史输出文件（可选，根据需要）
         mkdir -p excel_output
-        # find excel_output/ -maxdepth 1 -type f \( -name "*.xlsx" -o -name "*.json" \) -delete
+        # 删除旧的Excel文件，保留JSON？可根据需求调整
         find excel_output/ -maxdepth 1 -type f -name "*.xlsx" -delete
+
         # 执行主脚本
         python3 main.py
 
-        # 查找输出文件
-        original_file=$(ls excel_output/*.xlsx | head -n 1)
-        new_file="excel_output/宜昌市信用数据_${ts}.xlsx"
-        [ -f "$original_file" ] && mv "$original_file" "$new_file"
-
-        # 验证文件生成成功
-        if [ ! -f "$new_file" ]; then
-            echo "::error:: 文件生成失败"
+        # 查找生成的所有Excel文件
+        xlsx_files=(excel_output/*.xlsx)
+        if [ ${#xlsx_files[@]} -eq 0 ]; then
+            echo "::error:: 未生成任何Excel文件"
             exit 1
         fi
 
-        echo "file-path=${new_file}" >> $GITHUB_OUTPUT
+        # 遍历所有Excel文件，按文件名模式进行重命名（可选）
+        # 这里假设主文件名包含“信用评价信息”，明细表文件名包含“信誉分明细表”
+        for file in "${xlsx_files[@]}"; do
+            filename=$(basename "$file")
+            if [[ "$filename" == *"信用评价信息"* ]]; then
+                # 主文件重命名
+                new_name="宜昌市信用数据_${ts}.xlsx"
+                mv "$file" "excel_output/$new_name"
+                echo "主文件重命名为: $new_name"
+                echo "main-excel=excel_output/$new_name" >> $GITHUB_OUTPUT
+            elif [[ "$filename" == *"信誉分明细表"* ]]; then
+                # 明细表重命名（保留原名称，但可以添加时间戳）
+                # 这里直接使用原文件名，因为它已经包含时间戳
+                # 也可以重命名为统一格式
+                new_name="信誉分明细表_${ts}.xlsx"
+                mv "$file" "excel_output/$new_name"
+                echo "明细表重命名为: $new_name"
+                echo "detail-excel=excel_output/$new_name" >> $GITHUB_OUTPUT
+            else
+                # 其他Excel文件，保留原名
+                echo "未识别的Excel文件: $filename"
+            fi
+        done
+
+        # 可选：处理JSON文件（如果需要）
+        # json_files=(excel_output/*.json)
+        # ... 类似处理
+
+        # 验证至少有一个Excel文件存在
+        if [ ! -f "excel_output/宜昌市信用数据_${ts}.xlsx" ]; then
+            echo "::error:: 主Excel文件生成失败"
+            exit 1
+        fi
 
     - name: 上传数据文件
       uses: actions/upload-artifact@v4
       with:
         name: enterprise-data
-        path: ${{ steps.export.outputs.file-path }}
+        path: |
+          excel_output/*.xlsx
+          excel_output/*.json   # 如果也需要上传JSON文件
         retention-days: 7
 
     - name: 提交到仓库
@@ -68,13 +102,13 @@ jobs:
 
         # 使用北京时间生成时间戳与目录
         ts="${{ steps.export.outputs.ts }}"
-        filename=$(basename "${{ steps.export.outputs.file-path }}")
         month_dir=$(TZ='Asia/Shanghai' date +'%Y-%m')
 
         mkdir -p "historical_data/$month_dir"
 
-        # 复制文件到历史目录
-        cp "${{ steps.export.outputs.file-path }}" "historical_data/$month_dir/$filename"
+        # 复制所有Excel和JSON文件到历史目录（保留原文件名）
+        cp excel_output/*.xlsx "historical_data/$month_dir/" 2>/dev/null || true
+        cp excel_output/*.json "historical_data/$month_dir/" 2>/dev/null || true
 
         # 添加变更（如果有）
         git add .
