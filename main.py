@@ -679,7 +679,7 @@ def export_to_excel(data, session, github_mode=False):
                         max_score,                          # 资质信誉分
                         lh.get('reason', ''),               # 获奖/表彰事由
                         proj_name,                          # 项目名称
-                        bl.get('kfqyzz', ''),               # 资质类型
+                        lh.get('kfqyzz', ''),               # 资质类型
                         lh.get('bzXwlb', ''),               # 行为类别
                         lh.get('beginDate', ''),            # 开始日期
                         lh.get('endDate', ''),              # 结束日期
