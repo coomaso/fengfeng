@@ -607,7 +607,6 @@ def export_to_excel(data, session, github_mode=False):
         else:
             if score > cecid_to_info[cec_id]['max_score']:
                 cecid_to_info[cec_id]['max_score'] = score
-                # 如果分数更高，也可以更新资质类型，但保持第一个即可
 
     if not cecid_to_info:
         print("没有诚信分值≥110的企业，跳过信誉分明细表生成。")
@@ -622,7 +621,6 @@ def export_to_excel(data, session, github_mode=False):
                     detail_cache[cec_id] = detail
                 else:
                     print(f"警告: 无法获取企业 {info['cioName']} 的信誉分明细，跳过该企业。")
-                    # 标记为空，后续不处理
                     detail_cache[cec_id] = None
 
         # 3. 创建新工作簿
@@ -663,43 +661,47 @@ def export_to_excel(data, session, github_mode=False):
                 continue
             company_name = info['cioName']
             max_score = info['max_score']
-            eqt_name = info['eqtName']  # 资质类型
+            # 如果明细中包含企业资质类型，可覆盖；否则使用汇总表中的资质类型
+            eqt_name = detail.get('eqtName', info.get('eqtName', ''))
 
             # 处理不良行为
             blxw_list = detail.get('blxwArray', [])
             for bl in blxw_list:
+                # 根据实际字段映射
                 row = [
                     company_name,
                     max_score,
-                    bl.get('wfr', '') or bl.get('wfry', ''),         # 违规人员
-                    bl.get('sfzh', ''),                              # 身份证号
-                    bl.get('wysy', '') or bl.get('yy', ''),          # 违规事由
-                    bl.get('xmmc', ''),                              # 项目名称
-                    eqt_name,                                        # 资质类型
-                    bl.get('xwlx', '') or bl.get('lxtype', ''),      # 行为类别
-                    bl.get('kssj', ''),                              # 开始日期
-                    bl.get('jssj', ''),                              # 结束日期
-                    bl.get('yxq', ''),                               # 有效期(月)
-                    bl.get('kfz', 0) or bl.get('kf', 0),             # 扣分值
-                    bl.get('qrsbh', '') or bl.get('bh', '')          # 确认书编号
+                    bl.get('cfry', ''),                 # 违规人员
+                    bl.get('cfryCertNum', ''),          # 身份证号
+                    bl.get('reason', ''),               # 违规事由
+                    bl.get('engName', ''),              # 项目名称
+                    bl.get('kfqyzz', eqt_name),         # 资质类型（优先使用明细中的资质）
+                    bl.get('bzXwlb', ''),               # 行为类别
+                    bl.get('beginDate', ''),            # 开始日期
+                    bl.get('endDate', ''),              # 结束日期
+                    bl.get('valid', ''),                # 有效期(月)
+                    bl.get('realValue', 0),             # 扣分值（实际值）
+                    bl.get('kftzsbh', '')               # 确认书编号
                 ]
                 bad_sheet.append(row)
 
             # 处理良好行为
             lhxw_list = detail.get('lhxwArray', [])
             for lh in lhxw_list:
+                # 项目名称：优先使用 engName，若无则用 hjyy
+                proj_name = lh.get('engName', '') or lh.get('hjyy', '')
                 row = [
                     company_name,
                     max_score,
-                    lh.get('jlbtsy', '') or lh.get('jlmc', '') or lh.get('mc', ''),  # 获奖/表彰事由
-                    lh.get('xmmc', ''),                              # 项目名称
-                    eqt_name,                                        # 资质类型
-                    lh.get('xwlx', '') or lh.get('lxtype', ''),      # 行为类别
-                    lh.get('kssj', ''),                              # 开始日期
-                    lh.get('jssj', ''),                              # 结束日期
-                    lh.get('yxq', ''),                               # 有效期(月)
-                    lh.get('jfz', 0) or lh.get('jf', 0),             # 加分值
-                    lh.get('wh', '') or lh.get('wenhao', '')         # 文号
+                    lh.get('reason', ''),               # 获奖/表彰事由
+                    proj_name,                          # 项目名称
+                    lh.get('jfqyzz', eqt_name),         # 资质类型
+                    lh.get('bzXwlb', ''),               # 行为类别
+                    lh.get('beginDate', ''),            # 开始日期
+                    lh.get('endDate', ''),              # 结束日期
+                    lh.get('valid', ''),                # 有效期(月)
+                    lh.get('realValue', 0),             # 加分值
+                    lh.get('documentNumber', '')        # 文号
                 ]
                 good_sheet.append(row)
 
@@ -725,7 +727,7 @@ def export_to_excel(data, session, github_mode=False):
         print(f"信誉分明细表已保存至：{os.path.abspath(detail_filename)}")
         print(f"不良行为记录数：{bad_sheet.max_row-1}")
         print(f"良好行为记录数：{good_sheet.max_row-1}")
-
+        
     # 返回原有结果
     return {
         "excel": filename,
