@@ -588,205 +588,194 @@ def export_to_excel(data, session, github_mode=False):
     # ==================== 新增：生成信誉分明细表（诚信分值≥110的企业，按资质类型匹配） ====================
     print("\n=== 开始生成信誉分明细表（按资质类型匹配分值≥110） ===")
 
-    # 1. 收集需要导出明细的资质类型记录（每个资质类型独立，分值>=110）
-    # 使用 (cecId, zzmx) 作为唯一键
-    qual_to_info = {}  # key: (cecId, zzmx) -> {'cioName':企业名称, 'score':分值, 'eqtName':资质类别}
-    for record in processed_data:
-        cec_id = record.get('cecId')
-        zzmx = record.get('zzmx')
-        if not cec_id or not zzmx:
-            continue
-        score = record.get('score', 0)
-        if score < 110:
-            continue
-        key = (cec_id, zzmx)
-        if key not in qual_to_info:
-            qual_to_info[key] = {
-                'cioName': record.get('cioName', ''),
-                'score': score,
-                'eqtName': record.get('eqtName', '')
-            }
-        else:
-            # 如果同一资质类型有多个记录，取最高分（理论上不会）
-            if score > qual_to_info[key]['score']:
-                qual_to_info[key]['score'] = score
-
-    if not qual_to_info:
-        print("没有诚信分值≥110的资质类型记录，跳过信誉分明细表生成。")
-    else:
-        # 2. 获取这些企业的明细（按企业去重，避免重复请求）
-        cec_set = set(cec_id for cec_id, _ in qual_to_info.keys())
-        for cec_id in cec_set:
-            if cec_id not in detail_cache:
-                # 获取企业名称（取任意一个资质记录的企业名）
-                company_name = next((info['cioName'] for (cid, _), info in qual_to_info.items() if cid == cec_id), '')
-                if not company_name:
-                    continue
-                time.sleep(random.uniform(5, 15))
-                detail = fetch_company_detail(session, cec_id, company_name, max_retries=3)
-                if detail:
-                    detail_cache[cec_id] = detail
-                else:
-                    print(f"警告: 无法获取企业 {company_name} 的信誉分明细，跳过该企业。")
-                    detail_cache[cec_id] = None
-
-        # 3. 创建新工作簿并定义表头
-        detail_wb = Workbook()
-        default_sheet = detail_wb.active
-        detail_wb.remove(default_sheet)
-
-        bad_headers = [
-            "企业名称", "诚信分值", "违规人员", "身份证号", "违规事由", "项目名称",
-            "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "扣分值", "确认书编号"
-        ]
-        good_headers = [
-            "企业名称", "诚信分值", "获奖 / 表彰事由", "项目名称",
-            "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "加分值", "文号"
-        ]
-
-        bad_sheet = detail_wb.create_sheet("不良行为")
-        bad_sheet.append(bad_headers)
-        good_sheet = detail_wb.create_sheet("良好行为")
-        good_sheet.append(good_headers)
-
-        # 4. 填充数据（按资质类型匹配分值）
-        for cec_id, detail in detail_cache.items():
-            if not detail:
+    try:
+        # 1. 收集需要导出明细的资质类型记录（每个资质类型独立，分值>=110）
+        qual_to_info = {}  # key: (cecId, zzmx) -> {'cioName':企业名称, 'score':分值, 'eqtName':资质类别}
+        for record in processed_data:
+            cec_id = record.get('cecId')
+            zzmx = record.get('zzmx')
+            if not cec_id or not zzmx:
                 continue
-            # 不良行为
-            for bl in detail.get('blxwArray', []):
-                # 提取资质类型字段
-                qual_name = bl.get('kfqyzz', '')
-                if not qual_name:
-                    continue
-                # 查找对应的资质类型记录
-                key = (cec_id, qual_name)
-                info = qual_to_info.get(key)
-                if not info:
-                    # 如果无法匹配，尝试模糊匹配（例如去掉末尾等级）
-                    # 简单处理：遍历所有key，判断qual_name是否以zzmx开头或反之
-                    matched = False
-                    for (cid, zzmx), inf in qual_to_info.items():
-                        if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
-                            info = inf
-                            matched = True
-                            break
-                    if not matched:
-                        # 未匹配到，跳过该行为（因为分值未知）
-                        continue
-                row = [
-                    info['cioName'],                    # 企业名称
-                    info['score'],                      # 资质信誉分
-                    bl.get('cfry', ''),                 # 违规人员
-                    bl.get('cfryCertNum', ''),          # 身份证号
-                    bl.get('reason', ''),               # 违规事由
-                    bl.get('engName', ''),              # 项目名称
-                    qual_name,                          # 资质类型
-                    bl.get('bzXwlb', ''),               # 行为类别
-                    bl.get('beginDate', ''),            # 开始日期
-                    bl.get('endDate', ''),              # 结束日期
-                    bl.get('valid', ''),                # 有效期(月)
-                    bl.get('realValue', 0),             # 扣分值（实际值）
-                    bl.get('kftzsbh', '')               # 确认书编号
-                ]
-                bad_sheet.append(row)
+            score = record.get('score', 0)
+            if score < 110:
+                continue
+            key = (cec_id, zzmx)
+            if key not in qual_to_info:
+                qual_to_info[key] = {
+                    'cioName': record.get('cioName', ''),
+                    'score': score,
+                    'eqtName': record.get('eqtName', '')
+                }
+            else:
+                if score > qual_to_info[key]['score']:
+                    qual_to_info[key]['score'] = score
 
-            # 良好行为
-            for lh in detail.get('lhxwArray', []):
-                qual_name = lh.get('jfqyzz', '')
-                if not qual_name:
-                    continue
-                key = (cec_id, qual_name)
-                info = qual_to_info.get(key)
-                if not info:
-                    # 模糊匹配
-                    matched = False
-                    for (cid, zzmx), inf in qual_to_info.items():
-                        if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
-                            info = inf
-                            matched = True
-                            break
-                    if not matched:
-                        continue
-                proj_name = lh.get('engName', '') or lh.get('hjyy', '')
-                row = [
-                    info['cioName'],                    # 企业名称
-                    info['score'],                      # 资质信誉分
-                    lh.get('reason', ''),               # 获奖/表彰事由
-                    proj_name,                          # 项目名称
-                    qual_name,                          # 资质类型
-                    lh.get('bzXwlb', ''),               # 行为类别
-                    lh.get('beginDate', ''),            # 开始日期
-                    lh.get('endDate', ''),              # 结束日期
-                    lh.get('valid', ''),                # 有效期(月)
-                    lh.get('realValue', 0),             # 加分值
-                    lh.get('documentNumber', '')        # 文号
-                ]
-                good_sheet.append(row)
-                
-
-        # 5. 应用样式（冻结首行、表头蓝色、数据居中边框、自适应列宽）
-        from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-        from openpyxl.utils import get_column_letter
-
-        header_fill = PatternFill("solid", fgColor="003366")
-        header_font = Font(bold=True, color="FFFFFF")
-        header_alignment = Alignment(horizontal="center", vertical="center")
-        header_border = Border(
-            left=Side(style="thin"), right=Side(style="thin"),
-            top=Side(style="thin"), bottom=Side(style="thin")
-        )
-
-        data_alignment = Alignment(horizontal="center", vertical="center")
-        data_border = Border(
-            left=Side(style="thin"), right=Side(style="thin"),
-            top=Side(style="thin"), bottom=Side(style="thin")
-        )
-
-        for sheet in [bad_sheet, good_sheet]:
-            sheet.freeze_panes = 'A2'
-            # 表头样式
-            for cell in sheet[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = header_alignment
-                cell.border = header_border
-            # 数据样式
-            for row in sheet.iter_rows(min_row=2):
-                for cell in row:
-                    cell.alignment = data_alignment
-                    cell.border = data_border
-            # 自适应列宽（中文字符宽度估算为2）
-            for col in sheet.columns:
-                max_len = 0
-                col_letter = get_column_letter(col[0].column)
-                for cell in col:
-                    if cell.value:
-                        content = str(cell.value)
-                        length = sum(2 if '\u4e00' <= c <= '\u9fff' else 1 for c in content)
-                        if length > max_len:
-                            max_len = length
-                adjusted_width = min(max(max_len + 2, 8), 50)
-                sheet.column_dimensions[col_letter].width = adjusted_width
-
-        # 6. 保存明细表
-        detail_filename = f"信誉分明细表_{timestamp}.xlsx"
-        if github_mode:
-            detail_filename = os.path.join(output_dir, detail_filename)
+        if not qual_to_info:
+            print("没有诚信分值≥110的资质类型记录，跳过信誉分明细表生成。")
         else:
-            detail_filename = os.path.join(os.getcwd(), detail_filename)
+            # 2. 获取这些企业的明细（按企业去重，避免重复请求）
+            cec_set = set(cec_id for cec_id, _ in qual_to_info.keys())
+            for cec_id in cec_set:
+                if cec_id not in detail_cache:
+                    company_name = next((info['cioName'] for (cid, _), info in qual_to_info.items() if cid == cec_id), '')
+                    if not company_name:
+                        continue
+                    time.sleep(random.uniform(5, 15))
+                    detail = fetch_company_detail(session, cec_id, company_name, max_retries=3)
+                    if detail:
+                        detail_cache[cec_id] = detail
+                    else:
+                        print(f"警告: 无法获取企业 {company_name} 的信誉分明细，跳过该企业。")
+                        detail_cache[cec_id] = None
 
-        detail_wb.save(detail_filename)
-        print(f"信誉分明细表已保存至：{os.path.abspath(detail_filename)}")
-        print(f"不良行为记录数：{bad_sheet.max_row-1}")
-        print(f"良好行为记录数：{good_sheet.max_row-1}")
+            # 3. 创建新工作簿并定义表头
+            detail_wb = Workbook()
+            default_sheet = detail_wb.active
+            detail_wb.remove(default_sheet)
+
+            bad_headers = [
+                "企业名称", "诚信分值", "违规人员", "身份证号", "违规事由", "项目名称",
+                "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "扣分值", "确认书编号"
+            ]
+            good_headers = [
+                "企业名称", "诚信分值", "获奖 / 表彰事由", "项目名称",
+                "资质类型", "行为类别", "开始日期", "结束日期", "有效期 (月)", "加分值", "文号"
+            ]
+
+            bad_sheet = detail_wb.create_sheet("不良行为")
+            bad_sheet.append(bad_headers)
+            good_sheet = detail_wb.create_sheet("良好行为")
+            good_sheet.append(good_headers)
+
+            # 4. 填充数据（按资质类型匹配分值）
+            for cec_id, detail in detail_cache.items():
+                if not detail:
+                    continue
+                # 不良行为
+                for bl in detail.get('blxwArray', []):
+                    qual_name = bl.get('kfqyzz', '')
+                    if not qual_name:
+                        continue
+                    key = (cec_id, qual_name)
+                    info = qual_to_info.get(key)
+                    if not info:
+                        matched = False
+                        for (cid, zzmx), inf in qual_to_info.items():
+                            if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
+                                info = inf
+                                matched = True
+                                break
+                        if not matched:
+                            continue
+                    row = [
+                        info['cioName'],                    # 企业名称
+                        info['score'],                      # 资质信誉分
+                        bl.get('cfry', ''),                 # 违规人员
+                        bl.get('cfryCertNum', ''),          # 身份证号
+                        bl.get('reason', ''),               # 违规事由
+                        bl.get('engName', ''),              # 项目名称
+                        qual_name,                          # 资质类型
+                        bl.get('bzXwlb', ''),               # 行为类别
+                        bl.get('beginDate', ''),            # 开始日期
+                        bl.get('endDate', ''),              # 结束日期
+                        bl.get('valid', ''),                # 有效期(月)
+                        bl.get('realValue', 0),             # 扣分值（实际值）
+                        bl.get('kftzsbh', '')               # 确认书编号
+                    ]
+                    bad_sheet.append(row)
+
+                # 良好行为
+                for lh in detail.get('lhxwArray', []):
+                    qual_name = lh.get('jfqyzz', '')
+                    if not qual_name:
+                        continue
+                    key = (cec_id, qual_name)
+                    info = qual_to_info.get(key)
+                    if not info:
+                        matched = False
+                        for (cid, zzmx), inf in qual_to_info.items():
+                            if cid == cec_id and (zzmx.startswith(qual_name) or qual_name.startswith(zzmx)):
+                                info = inf
+                                matched = True
+                                break
+                        if not matched:
+                            continue
+                    proj_name = lh.get('engName', '') or lh.get('hjyy', '')
+                    row = [
+                        info['cioName'],                    # 企业名称
+                        info['score'],                      # 资质信誉分
+                        lh.get('reason', ''),               # 获奖/表彰事由
+                        proj_name,                          # 项目名称
+                        qual_name,                          # 资质类型
+                        lh.get('bzXwlb', ''),               # 行为类别
+                        lh.get('beginDate', ''),            # 开始日期
+                        lh.get('endDate', ''),              # 结束日期
+                        lh.get('valid', ''),                # 有效期(月)
+                        lh.get('realValue', 0),             # 加分值
+                        lh.get('documentNumber', '')        # 文号
+                    ]
+                good_sheet.append(row)
+
+            # 5. 应用样式（冻结首行、表头蓝色、数据居中边框、自适应列宽）
+            header_fill = PatternFill("solid", fgColor="003366")
+            header_font = Font(bold=True, color="FFFFFF")
+            header_alignment = Alignment(horizontal="center", vertical="center")
+            header_border = Border(
+                left=Side(style="thin"), right=Side(style="thin"),
+                top=Side(style="thin"), bottom=Side(style="thin")
+            )
+
+            data_alignment = Alignment(horizontal="center", vertical="center")
+            data_border = Border(
+                left=Side(style="thin"), right=Side(style="thin"),
+                top=Side(style="thin"), bottom=Side(style="thin")
+            )
+
+            for sheet in [bad_sheet, good_sheet]:
+                sheet.freeze_panes = 'A2'
+                for cell in sheet[1]:
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = header_alignment
+                    cell.border = header_border
+                for row in sheet.iter_rows(min_row=2):
+                    for cell in row:
+                        cell.alignment = data_alignment
+                        cell.border = data_border
+                for col in sheet.columns:
+                    max_len = 0
+                    col_letter = get_column_letter(col[0].column)
+                    for cell in col:
+                        if cell.value:
+                            content = str(cell.value)
+                            length = sum(2 if '\u4e00' <= c <= '\u9fff' else 1 for c in content)
+                            if length > max_len:
+                                max_len = length
+                    adjusted_width = min(max(max_len + 2, 8), 50)
+                    sheet.column_dimensions[col_letter].width = adjusted_width
+
+            # 6. 保存明细表
+            detail_filename = f"信誉分明细表_{timestamp}.xlsx"
+            if github_mode:
+                detail_filename = os.path.join(output_dir, detail_filename)
+            else:
+                detail_filename = os.path.join(os.getcwd(), detail_filename)
+
+            detail_wb.save(detail_filename)
+            print(f"信誉分明细表已保存至：{os.path.abspath(detail_filename)}")
+            print(f"不良行为记录数：{bad_sheet.max_row-1}")
+            print(f"良好行为记录数：{good_sheet.max_row-1}")
+    except Exception as e:
+        print(f"生成信誉分明细表时发生错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     # 返回原有结果
     return {
         "excel": filename,
         "json": json_files
     }
-
+    
 def main():
     print("=== 启动数据获取程序 ===")
     session = requests.Session()
