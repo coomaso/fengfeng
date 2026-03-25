@@ -20,10 +20,10 @@ class Config:
     """全局配置参数"""
     # 请求配置
     RETRY_COUNT = 3
-    PAGE_RETRY_MAX = 2
+    PAGE_RETRY_MAX = 3
     TIMEOUT = 15
     PAGE_SIZE = 10
-    MAX_DETAIL_THREADS = 5  # 并发获取明细的最大线程数
+    MAX_DETAIL_THREADS = 2  # 并发获取明细的最大线程数
     DETAIL_RETRY = 3
     DETAIL_DELAY = (10, 30)  # 随机延迟范围（秒）
 
@@ -606,7 +606,7 @@ def main():
             cid = record.get('cecId')
             score = record.get('score', 0)
             qual = record.get('zzmx', '')
-            if cid and score >= 110 and qual:
+            if cid and qual:
                 if cid not in qual_scores:
                     qual_scores[cid] = {}
                 if qual not in qual_scores[cid] or score > qual_scores[cid][qual]:
